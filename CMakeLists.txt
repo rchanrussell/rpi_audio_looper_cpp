@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.10)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_CXX_FLAGS -Wall)
+set(CMAKE_SCAN_FOR_MODULES)
+add_compile_definitions(DTEST_TM)
+add_compile_definitions(DTEST_VERBOSE)
+project(test)
+
+set(COMMON_SOURCES data_block.cpp mixer.cpp track.cpp track_manager.cpp)
+## set(TARGET_SOURCES main.cpp)
+set(TEST_SOURCES_MIXER test_mixer.cpp)
+set(TEST_SOURCES_TRACK test_track.cpp)
+set(TEST_SOURCES_TRACK_MANAGER test_track_manager.cpp)
+
+## add_executable(application ${COMMON_SOURCES} ${TARGET_SOURCES})
+add_executable(test_mixer ${COMMON_SOURCES} ${TEST_SOURCES_MIXER})
+add_executable(test_track ${COMMON_SOURCES} ${TEST_SOURCES_TRACK})
+add_executable(test_manager ${COMMON_SOURCES} ${TEST_SOURCES_TRACK_MANAGER})
+
+## target_link_libraries(test PRIVATE wiringPi etc.. normal g++ -l items)
