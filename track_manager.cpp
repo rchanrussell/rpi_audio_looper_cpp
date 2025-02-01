@@ -12,9 +12,11 @@ TrackManager::TrackManager() {
 void TrackManager::PerformMixdown() {
   uint32_t index_one = 0;
   uint32_t index_two = 0;
+  uint32_t track_start_index = 0;
+  uint32_t track_end_index = 0;
   // Clear mixdown as MixBlocks does not do this and shouldn't for simplicity
   mixdown.SetData(empty_block);
-#ifdef DTEST_VERBOSE
+#ifdef DTEST_TM_VERBOSE
   std::cout << std::endl;
 #endif
   // if repeat, use track's own current_index, otherwise use master_current_index
@@ -27,7 +29,9 @@ void TrackManager::PerformMixdown() {
     // tracks in playback when master_current_index is outside range
     // need to be set to silent
     if (tracks.at(t).IsTrackInPlayback()) {
-      if (index_one < tracks.at(t).GetStartIndex() || index_one > tracks.at(t).GetEndIndex()) {
+      track_start_index = tracks.at(t).GetStartIndex();
+      track_end_index = tracks.at(t).GetEndIndex();
+      if (index_one < track_start_index || index_one > track_end_index || track_start_index == track_end_index) {
         tracks.at(t).SetTrackSilent(true);
       } else {
         tracks.at(t).SetTrackSilent(false);
@@ -35,41 +39,43 @@ void TrackManager::PerformMixdown() {
     }
 
     if (tracks.at(t + 1).IsTrackInPlayback()) {
-      if (index_two < tracks.at(t + 1).GetStartIndex() || index_two > tracks.at(t + 1).GetEndIndex()) {
+      track_start_index = tracks.at(t + 1).GetStartIndex();
+      track_end_index = tracks.at(t + 1).GetEndIndex();
+      if (index_two < track_start_index || index_two > track_end_index || track_start_index == track_end_index) {
         tracks.at(t + 1).SetTrackSilent(true);
       } else {
         tracks.at(t + 1).SetTrackSilent(false);
       }
     }
 
-#ifdef DTEST_VERBOSE
+#ifdef DTEST_TM_VERBOSE
     std::cout << "Track Manager: Mixing block " << index_one << " track " << t << " and block " << index_two << " track " << t + 1 << std::endl;
 #endif
     // Handle block mixdown based upon state
     // TODO - non-active group needs to be in here too
     if (tracks.at(t).IsTrackSilent() && tracks.at(t + 1).IsTrackSilent()) {
-#ifdef DTEST_VERBOSE
+#ifdef DTEST_TM_VERBOSE
       std::cout << "Track Manager: PerformMixdown: Silent - Silent" << std::endl;
 #endif
       MixBlocks(empty_block,
                 empty_block,
                 mixdown);
     } else if (tracks.at(t).IsTrackSilent() && !tracks.at(t + 1).IsTrackSilent()) {
-#ifdef DTEST_VERBOSE
+#ifdef DTEST_TM_VERBOSE
       std::cout << "Track Manager: PerformMixdown: Silent - Data" << std::endl;
 #endif
       MixBlocks(empty_block,
                 tracks.at(t + 1).GetBlockData(index_two),
                 mixdown);
     } else if (!tracks.at(t).IsTrackSilent() && tracks.at(t + 1).IsTrackSilent()) {
-#ifdef DTEST_VERBOSE
+#ifdef DTEST_TM_VERBOSE
       std::cout << "Track Manager: PerformMixdown: Data - Silent" << std::endl;
 #endif
       MixBlocks(tracks.at(t).GetBlockData(index_one),
                 empty_block,
                 mixdown);
     } else {
-#ifdef DTEST_VERBOSE
+#ifdef DTEST_TM_VERBOSE
       std::cout << "Track Manager: PerformMixdown: Data - Data" << std::endl;
 #endif
       MixBlocks(tracks.at(t).GetBlockData(index_one),
@@ -77,7 +83,7 @@ void TrackManager::PerformMixdown() {
                 mixdown);
     }
   }
-#ifdef DTEST_VERBOSE
+#ifdef DTEST_TM_VERBOSE
   std::cout << std::endl;
 #endif
 }
@@ -88,6 +94,9 @@ void TrackManager::PerformMixdown() {
 
 void TrackManager::SetMasterCurrentIndex(uint32_t current) {
   master_current_index = current;
+}
+void TrackManager::SetMasterEndIndex(uint32_t end) {
+  master_end_index = end;
 }
 uint32_t TrackManager::GetMasterCurrentIndex() {
   return master_current_index;
@@ -346,7 +355,7 @@ void TrackManager::HandleStateChange_Overdubbing(uint32_t track_number, DataBloc
   //              temp_block)
   MixBlocks(tracks.at(track_number).GetBlockData(current_index), data, temp_block);
   // -> track.SetBlockData(CurrentBlockIndex, temp_block)
-#ifdef DTEST_VERBOSE
+#ifdef DTEST_TM_VERBOSE
 std::cout << "  *** SetBlockData Overdub curr_idx " << current_index << std::endl;
 std::cout << "      master_current_index " << master_current_index << std::endl;
 temp_block.PrintBlock();
@@ -366,6 +375,7 @@ temp_block.PrintBlock();
 
 // Handle State Change - Playback(track_number)
 void TrackManager::HandleStateChange_Playback(uint32_t track_number) {
+
   // Don't change indexes if was muted
   if (!tracks.at(track_number).IsTrackInPlayback() &&
       !tracks.at(track_number).IsTrackMuted()) {
@@ -407,11 +417,13 @@ void TrackManager::HandleStateChange_PlaybackRepeat(uint32_t track_number) {
 // Mute tracks where 1 is set, 0 to unmute
 void TrackManager::HandleMuteUnmuteTracks(uint16_t tracks_to_mute_unmute) {
   // loop through all tracks
+  // save current state so we can return to it when unmuting
   for (uint32_t track_number = 0; track_number < tracks.size(); track_number++) {
     if (tracks_to_mute_unmute & (0x1 << track_number)) {
+      tracks.at(track_number).SaveCurrentState();
       tracks.at(track_number).SetTrackToMuted();
     } else {
-      tracks.at(track_number).SetTrackToInPlayback();
+      tracks.at(track_number).RestoreCurrentState();
     }
   }
 }

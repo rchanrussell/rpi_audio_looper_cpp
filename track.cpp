@@ -5,7 +5,30 @@ void Track::SetTrackMembersToDefault() {
   end_index = 0;
   current_index = 0;
   current_state = TRACK_STATE_OFF;
+  previous_state = TRACK_STATE_OFF; // only used when muting/unmuting
   is_track_silent = true;
+}
+void Track::RestoreUsingSetState() {
+  switch (previous_state) {
+    case TRACK_STATE_OFF:
+      SetTrackToOff();
+      break;
+    case TRACK_STATE_OVERDUB:
+      SetTrackToOverdubbing();
+      break;
+    case TRACK_STATE_PLAYBACK:
+      SetTrackToInPlayback();
+      break;
+    case TRACK_STATE_PLAYBACK_REPEAT:
+      SetTrackToInPlaybackRepeat();
+      break;
+    case TRACK_STATE_RECORDING:
+      SetTrackToInRecord();
+      break;
+    case TRACK_STATE_MUTE:
+      SetTrackToMuted();
+      break;
+  }
 }
 
 // Default Constructor - set all data to zero
@@ -67,8 +90,6 @@ uint32_t Track::GetCurrentIndex() {
 // after transfer of data to the track when recording/overdubbing
 bool Track::IsTrackSilent() {
   return is_track_silent;
-  // TODO put below as call to Set when enter those states
-  // return current_state == TRACK_STATE_MUTE || current_state == TRACK_STATE_OFF;
 }
 // If set to state MUTE, OFF or in playback but master_current_index is outside range
 // of track's start and end indexes
@@ -107,21 +128,35 @@ void Track::SetTrackToOff() {
 void Track::SetTrackToOverdubbing() {
   SetTrackSilent(false);
   current_state = TRACK_STATE_OVERDUB;
+  previous_state = current_state;
 }
 
 void Track::SetTrackToInPlayback() {
+  SetTrackSilent(false);
   current_state = TRACK_STATE_PLAYBACK;
+  previous_state = current_state;
 }
 
 void Track::SetTrackToInPlaybackRepeat() {
   // always play data because Current is used not master_current like play
   SetTrackSilent(false);
   current_state = TRACK_STATE_PLAYBACK_REPEAT;
+  previous_state = current_state;
 }
 
 void Track::SetTrackToInRecord() {
   SetTrackSilent(false);
   current_state = TRACK_STATE_RECORDING;
+  previous_state = current_state;
+}
+
+void Track::SaveCurrentState() {
+  previous_state = current_state;
+}
+
+void Track::RestoreCurrentState() {
+  // Use this instead of current = previous as it will restore the is_silent flag aswell
+  RestoreUsingSetState();
 }
 
 void Track::SetTrackToMuted() {

@@ -27,6 +27,7 @@ class GroupManager {
    * g: 7 t:0-15
    */
   std::array<uint16_t, MAX_GROUP_COUNT> groups;
+  std::array<uint32_t, MAX_GROUP_COUNT> group_master_end_index;
   uint8_t active_group;
 
   public:
@@ -38,6 +39,10 @@ class GroupManager {
   // Local storage only - meant for configuration
   void AddTrackToGroup(uint32_t track_number, uint8_t group_number);
   void RemoveTrackFromGroup(uint32_t track_number, uint8_t group_number);
+  void SetActiveGroupToPlay(TrackManager &tm);
+#ifdef DTEST_GM
+  void SetGroupMasterEndIndex(uint32_t end, uint8_t group_number);
+#endif
 
   // Calls TrackManager's HandleMuteUnmuteTracks - convert dual dim array to uint16_t
   // 0 - unmute, 1 - mute

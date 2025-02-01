@@ -71,8 +71,8 @@ class TrackManager {
   TrackManager();
 
   void PerformMixdown();
-
   void SetMasterCurrentIndex(uint32_t current);
+  void SetMasterEndIndex(uint32_t end);
   uint32_t GetMasterCurrentIndex();
   uint32_t GetMasterEndIndex();
 

@@ -31,7 +31,9 @@ class Track {
   uint32_t current_index;
   bool is_track_silent;
   TrackState current_state;
+  TrackState previous_state;
   void SetTrackMembersToDefault();
+  void RestoreUsingSetState();
 
   public:
   // Member Variables - while private provides encapsulation, I don't want copying
@@ -70,6 +72,8 @@ class Track {
   void SetTrackToInPlayback();
   void SetTrackToInPlaybackRepeat();
   void SetTrackToInRecord();
+  void SaveCurrentState();
+  void RestoreCurrentState();
   void SetTrackToMuted();
 };
 #endif // TRACK_H
