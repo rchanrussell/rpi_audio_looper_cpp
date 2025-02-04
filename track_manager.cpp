@@ -420,7 +420,11 @@ void TrackManager::HandleMuteUnmuteTracks(uint16_t tracks_to_mute_unmute) {
   // save current state so we can return to it when unmuting
   for (uint32_t track_number = 0; track_number < tracks.size(); track_number++) {
     if (tracks_to_mute_unmute & (0x1 << track_number)) {
-      tracks.at(track_number).SaveCurrentState();
+      // if already muted, don't mute again, as this will make restoring impossible
+      // this will prevent consecutive muted groups from destroying record of last unmuted group
+      if (!tracks.at(track_number).IsTrackMuted()) {
+        tracks.at(track_number).SaveCurrentState();
+      }
       tracks.at(track_number).SetTrackToMuted();
     } else {
       tracks.at(track_number).RestoreCurrentState();

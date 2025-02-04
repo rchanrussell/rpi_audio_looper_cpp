@@ -48,6 +48,7 @@ class GroupManager {
   // 0 - unmute, 1 - mute
   void SetActiveGroup(uint8_t group_number, TrackManager &tm);
   uint8_t GetActiveGroup();
+  void ResetActiveGroupToNone();
   void DisplayGroups();
 
 };

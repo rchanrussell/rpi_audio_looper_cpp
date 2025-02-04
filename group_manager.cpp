@@ -98,6 +98,10 @@ uint8_t GroupManager::GetActiveGroup() {
   return active_group;
 }
 
+void GroupManager::ResetActiveGroupToNone() {
+  active_group = MAX_GROUP_COUNT;
+}
+
 void GroupManager::DisplayGroups() {
   for (auto &g : groups) {
     std::cout << "0x" << std::hex << g << " ";
