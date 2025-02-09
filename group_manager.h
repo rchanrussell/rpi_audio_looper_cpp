@@ -5,8 +5,7 @@
 #include <iostream>
 #include <iterator>
 #include "track_manager.h"
-
-#define MAX_GROUP_COUNT 8
+#include "util.h"
 
 /*
 enum SystemEvents

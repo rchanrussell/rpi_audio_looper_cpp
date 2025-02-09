@@ -4,6 +4,8 @@
 #include <sys/time.h>    
 #include "track_manager.h"
 
+static TrackManager tm;
+
 #define NUM_BLOCKS_RECORD 5
 #define NUM_BLOCKS_OVERDUB 7
 
@@ -589,7 +591,6 @@ void Test_Playback_IfTracksWereOffFirst(TrackManager &tm) {
 
 int main() {
   std::cout << "** test_track_manager.cpp **" << std::endl;
-  TrackManager tm;
   Test_Record_SingleTrack(tm);
   Test_Overdub_SingleTrack(tm);
   Test_Playback_SingleTrack(tm);

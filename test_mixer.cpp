@@ -4,6 +4,8 @@
 #include "track.h"
 #include "mixer.h"
 
+static Track t1, t2, t3, t4;
+
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
   for (int i = 0; i < expected.samples.size(); i++) {
     if (expected.samples[i] != test.samples[i]) return false;
@@ -15,7 +17,6 @@ bool Test_SimpleMixerSummation(void) {
   // Create four tracks, populate with same sample values
   // sum and check against expected values
   DataBlock mixed, expected_results;
-  Track t1, t2, t3, t4;
   float expected_value = 36.4f;
   float offset = 0.0f;
 

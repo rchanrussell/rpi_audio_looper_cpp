@@ -4,11 +4,8 @@
 #include <array>
 #include <iostream>
 #include <iterator>
+#include "util.h"
 
-// TODO Put in DataBlock header - use #def for diff values
-#define SAMPLES_PER_BLOCK 128
-
-// TODO Put in own cpp/h file
 class DataBlock {
   public:
   // Member Variables

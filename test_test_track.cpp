@@ -4,6 +4,8 @@
 #include <sys/time.h>    
 #include "track_manager.h"
 
+static Track test_track(0.0f);
+
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
   for (unsigned long int i = 0; i < expected.samples.size(); i++) {
     if (expected.samples[i] != test.samples[i]) return false;
@@ -192,7 +194,6 @@ void Test_MixblocksWithTiming() {
 // TODO Turn this into a test
 int main() {
   std::cout << "** test_track.cpp **" << std::endl;
-  Track test_track(0.0f);
   Test_SimulateRecord(test_track);
   Test_SimulatePlayback(test_track);
   Test_SimulateOverdub(test_track);

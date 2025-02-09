@@ -4,10 +4,10 @@
 #include <array>
 #include <iostream>
 #include <iterator>
+#include "util.h"
 #include "track.h"
 #include "mixer.h"
 
-#define MAX_TRACK_COUNT 16
 
 enum SystemEvents
 {

@@ -22,7 +22,6 @@ enum TrackState {
 // if 6GB used that's 2359s per track!
 // set to a reasonable number based upon RPI model and weather stereo or not
 // For stereo we'd create another track manager object
-#define MAX_BLOCK_COUNT 10
 
 class Track {
   // Indexes are per block of 128 samples, not per sample
