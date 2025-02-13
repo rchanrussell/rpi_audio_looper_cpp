@@ -62,7 +62,6 @@ void Test_Record_SingleTrack(TrackManager &tm) {
     tm.HandleStateChange_Recording(track_number, test_data_incr);
     tm.HandleIndexUpdate_AlreadyInState_AllStates();
   }
-  data_block_number--; // don't want it set to 6
 
   // -> verify manually and state - get data via mixdown - currentIndex should be 5
   if (data_block_number != tm.tracks.at(track_number).GetCurrentIndex()) {

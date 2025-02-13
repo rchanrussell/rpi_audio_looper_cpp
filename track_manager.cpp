@@ -1,10 +1,24 @@
 #include "track_manager.h"
+#include "track_manager_states.h"
 
 static DataBlock empty_block;
 
 // Default Constructor - set all data to zero
 TrackManager::TrackManager() {
-  std::cout << "TrackManager: DF called" << std::endl;
+  current_state = &Off::getInstance();
+}
+
+// If current track is REC/OVD and new track is REC/OVD -- push current track to Playback
+void TrackManager::NewTrackRecordingRequestWhileRecording(uint32_t track_number) {
+  if (last_track_number != track_number) {
+    if (tracks.at(last_track_number).IsTrackInRecord()) {
+      HandleIndexUpdate_Recording_OnExitState(last_track_number);
+    }
+    if (tracks.at(last_track_number).IsTrackOverdubbing()) {
+      HandleIndexUpdate_Overdubbing_OnExitState(last_track_number);
+    }
+    tracks.at(last_track_number).SetTrackToInPlayback();
+  }
 }
 
 // Perform Mixdown
@@ -280,26 +294,64 @@ void TrackManager::HandleIndexUpdate_AlreadyInState_AllStates() {
     if (tracks.at(track_number).IsTrackInRecord()) {
       HandleIndexUpdate_Recording_AlreadyInState(track_number);
       // Update the _end_index 
+#ifdef DTEST_TM
       HandleIndexUpdate_Recording_OnExitState(track_number);
+#endif
       continue; // don't waste time doing rest of the checks
     }
     if (tracks.at(track_number).IsTrackOverdubbing()) {
       HandleIndexUpdate_Overdubbing_AlreadyInState(track_number);
+#ifdef DTEST_TM
       HandleIndexUpdate_Overdubbing_OnExitState(track_number);
+#endif
       continue; // don't waste time doing rest of the checks
     }
     // Mute is playback but silent, so keep indexes updating
     if (tracks.at(track_number).IsTrackInPlayback() ||
         tracks.at(track_number).IsTrackMuted()) {
       HandleIndexUpdate_Playback_AlreadyInState(track_number);
+#ifdef DTEST_TM
+      HandleIndexUpdate_Playback_OnExitState(track_number);
+#endif
       continue; // don't waste time doing rest of the checks
     }
     if (tracks.at(track_number).IsTrackInPlaybackRepeat()) {
       HandleIndexUpdate_PlaybackRepeat_AlreadyInState(track_number);
+#ifdef DTEST_TM
+      HandleIndexUpdate_PlaybackRepeat_OnExitState(track_number);
+#endif
       continue; // don't waste time doing rest of the checks
     }
   }
 }
+
+/*
+ * Set Track State Handlers
+ */
+void TrackManager::SetTrackState_Off(uint32_t track_number) {
+  tracks.at(track_number).SetTrackToOff();
+}
+
+void TrackManager::SetTrackState_Record(uint32_t track_number) {
+  tracks.at(track_number).SetTrackToInRecord();
+}
+
+void TrackManager::SetTrackState_Overdub(uint32_t track_number) {
+  tracks.at(track_number).SetTrackToOverdubbing();
+}
+
+void TrackManager::SetTrackState_Playback(uint32_t track_number) {
+  tracks.at(track_number).SetTrackToInPlayback();
+}
+
+void TrackManager::SetTrackState_Repeat(uint32_t track_number) {
+  tracks.at(track_number).SetTrackToInPlaybackRepeat();
+}
+
+void TrackManager::SetTrackState_Mute(uint32_t track_number) {
+  tracks.at(track_number).SetTrackToMuted();
+}
+
 
 /*
  * State Change Handlers
@@ -414,6 +466,14 @@ void TrackManager::HandleStateChange_PlaybackRepeat(uint32_t track_number) {
   // HandleIndexUpdate_PlaybackRepeat_OnExitState(track_number);
 }
 
+// Handle State Change - Mute (track_number)
+void TrackManager::HandleStateChange_Mute(uint32_t track_number) {
+  tracks.at(track_number).SetTrackToMuted();
+  PerformMixdown();
+}
+
+
+
 // Mute tracks where 1 is set, 0 to unmute
 void TrackManager::HandleMuteUnmuteTracks(uint16_t tracks_to_mute_unmute) {
   // loop through all tracks
@@ -430,5 +490,61 @@ void TrackManager::HandleMuteUnmuteTracks(uint16_t tracks_to_mute_unmute) {
       tracks.at(track_number).RestoreCurrentState();
     }
   }
+}
+
+/*
+ * State Machine Methods
+ */
+void TrackManager::SetState(TrackManagerState &new_state, uint32_t track_number) {
+  current_state->exit(*this, track_number);
+  current_state = &new_state;
+  current_state->enter(*this, track_number);
+}
+
+/*
+ * Data Transfer Methods
+ */
+
+void TrackManager::CopyBufferToTrack(uint32_t track_number) {
+  // memcpy?
+  // Convert pointer data to DataBlock std::array of floats--> .samples
+  DataBlock data;
+  // call track.at().SetBuffer
+  tracks.at(track_number).SetBlockData(tracks.at(track_number).GetCurrentIndex(),
+                                       data);
+}
+
+void TrackManager::CopyMixdownToBuffer() {
+  // convert from mixdown DataBlock back to pointer and memcpy?
+}
+
+/*
+ * Event Handlers
+ * event system knows the event type D, DD, SP, LP and which input/track
+ * We want to store this track number and pass it on as the various index updates
+ * and data copies require it -- so we know which track should state transition
+ * TM always follows the current track's transition
+ * But in some cases we should handle forced transitions
+ * IE recording on T0, user presses DN on T1 - we must stop recording on T0 - set it to PLY
+ */
+
+void TrackManager::HandleDownEvent(uint32_t track_number) {
+  current_state->handle_down_event(*this, track_number);
+  last_track_number = track_number;
+}
+
+void TrackManager::HandleDoubleDownEvent(uint32_t track_number) {
+  current_state->handle_double_down_event(*this, track_number);
+  last_track_number = track_number;
+}
+
+void TrackManager::HandleShortPulseEvent(uint32_t track_number) {
+  current_state->handle_short_pulse_event(*this, track_number);
+  last_track_number = track_number;
+}
+
+void TrackManager::HandleLongPulseEvent(uint32_t track_number) {
+  current_state->handle_long_pulse_event(*this, track_number);
+  last_track_number = track_number;
 }
 
