@@ -126,6 +126,7 @@ class TrackManager {
   // State Machine Section
   void SetState(TrackManagerState &new_state, uint32_t track_number);
   inline TrackManagerState& GetCurrentState() const { return *current_state; }
+  void SyncTrackManagerStateWithTrackState(uint32_t track_number);
 
   /*
    * TODO Organize better the state related stuff from before

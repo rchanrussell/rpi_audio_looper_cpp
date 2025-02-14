@@ -15,6 +15,7 @@ class Off : public TrackManagerState {
   Off() {};
   Off(const Off& other);
   Off& operator=(const Off& other);
+  TrackState state_id;
 
   public:
   // State Specific Methods

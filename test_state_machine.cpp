@@ -15,110 +15,379 @@ bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
   return true;
 }
 
-void Test_Off_To_Record(TrackManager &tm) {
-  std::cout << "** Test Off To Record **" << std::endl;
+bool DebugTesting(TrackManager &tm) {
+  int idx = 0;
+  bool result = true;
+  std::cout << "** Debug Testing **" << std::endl;
+
+  for (idx = 0; idx < MAX_TRACK_COUNT; idx++) {
+    tm.tracks.at(idx).IsTrackOff();
+    if (!result) {
+      std::cout << "error: track " << idx << " not off" << std::endl;
+      return result;
+    }
+  }
+  tm.HandleDownEvent(0);
+
+  tm.HandleDownEvent(1);
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track 0 not in playback" << std::endl;
+    return result;
+  }
+  result = tm.tracks.at(1).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track 1 not in record" << std::endl;
+    return result;
+  }
+
+  return result;
+}
+
+bool Test_NormalUseCases(TrackManager &tm) {
+  std::cout << "** Test Normal Use Cases - state machine **" << std::endl;
+
+  std::cout << "    Test Off To Record **" << std::endl;
   // Default state - off
   tm.HandleDownEvent(0);
   bool result = tm.tracks.at(0).IsTrackInRecord();
   if (!result) {
     std::cout << "error: track not in record" << std::endl;
+    return result;
   }
-}
 
-void Test_Record_To_Playback(TrackManager &tm) {
-  std::cout << "** Test Record to Play **" << std::endl;
+  std::cout << "    Test Record to Play **" << std::endl;
   tm.HandleDownEvent(0);
-  bool result = tm.tracks.at(0).IsTrackInPlayback();
+  result = tm.tracks.at(0).IsTrackInPlayback();
   if (!result) {
     std::cout << "error: track not in playback" << std::endl;
+    return result;
   }
-}
 
-void Test_Playback_To_Overdub(TrackManager &tm) {
-  std::cout << "** Test Play to Overdub **" << std::endl;
+  std::cout << "    Test Play to Overdub **" << std::endl;
   tm.HandleDownEvent(0);
-  bool result = tm.tracks.at(0).IsTrackOverdubbing();
+  result = tm.tracks.at(0).IsTrackOverdubbing();
   if (!result) {
     std::cout << "error: track not in overdubbing" << std::endl;
+    return result;
   }
-}
 
-void Test_Overdub_To_Playback(TrackManager &tm) {
-  std::cout << "** Test Overdub to Play **" << std::endl;
+  std::cout << "    Test Overdub to Play **" << std::endl;
   tm.HandleDownEvent(0);
-  bool result = tm.tracks.at(0).IsTrackInPlayback();
+  result = tm.tracks.at(0).IsTrackInPlayback();
   if (!result) {
     std::cout << "error: track not in playback" << std::endl;
+    return result;
   }
-}
 
-void Test_Playback_To_Mute(TrackManager &tm) {
-  std::cout << "** Test Play to Mute **" << std::endl;
+  std::cout << "    Test Play to Mute **" << std::endl;
   tm.HandleDownEvent(0);
   tm.HandleDoubleDownEvent(0);
-  bool result = tm.tracks.at(0).IsTrackMuted();
+  result = tm.tracks.at(0).IsTrackMuted();
   if (!result) {
     std::cout << "error: track not muted" << std::endl;
+    return result;
   }
-}
 
-void Test_Mute_To_Playback(TrackManager &tm) {
-  std::cout << "** Test Mute to Play **" << std::endl;
+  std::cout << "    Test Mute to Play **" << std::endl;
   tm.HandleDownEvent(0);
-  bool result = tm.tracks.at(0).IsTrackInPlayback();
+  result = tm.tracks.at(0).IsTrackInPlayback();
   if (!result) {
     std::cout << "error: track not in playback" << std::endl;
+    return result;
   }
-}
 
-void Test_Playback_To_Off(TrackManager &tm) {
-  std::cout << "** Test Play to Off **" << std::endl;
+  std::cout << "    Test Play to Off **" << std::endl;
   tm.HandleDoubleDownEvent(0);
-  bool result = tm.tracks.at(0).IsTrackOff();
+  result = tm.tracks.at(0).IsTrackOff();
   if (!result) {
     std::cout << "error: track not off" << std::endl;
+    return result;
   }
-}
 
-void Test_Record_To_Repeat(TrackManager &tm) {
-  std::cout << "** Test Record to Repeat **" << std::endl;
+  std::cout << "    Test Off To Record **" << std::endl;
+  // Default state - off
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track not in record" << std::endl;
+    return result;
+  }
+
+  std::cout << "    Test Record to Repeat **" << std::endl;
+  // Off to Record
   tm.HandleLongPulseEvent(0);
-  bool result = tm.tracks.at(0).IsTrackInPlaybackRepeat();
+  result = tm.tracks.at(0).IsTrackInPlaybackRepeat();
   if (!result) {
     std::cout << "error: track not in repeat" << std::endl;
+    return result;
   }
-}
 
-void Test_Repeat_To_Mute(TrackManager &tm) {
-  std::cout << "** Test Repeat to Mute **" << std::endl;
+  std::cout << "    Test Repeat to Mute **" << std::endl;
   tm.HandleDownEvent(0);
-  bool result = tm.tracks.at(0).IsTrackMuted();
+  result = tm.tracks.at(0).IsTrackMuted();
   if (!result) {
     std::cout << "error: track not muted" << std::endl;
+    return result;
   }
+
+  std::cout << "    Test Mute to Off **" << std::endl;
+  tm.HandleDoubleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track not off" << std::endl;
+    return result;
+  }
+  return result;
 }
 
-void Test_Mute_To_Off(TrackManager &tm) {
-  std::cout << "** Test Mute to Off **" << std::endl;
-  tm.HandleDoubleDownEvent(0);
+bool Test_AbnormalUseCases(TrackManager &tm) {
+  std::cout << "** Test Abnormal Use Cases - state machine **" << std::endl;
+  // Starting from Off
   bool result = tm.tracks.at(0).IsTrackOff();
   if (!result) {
     std::cout << "error: track not off" << std::endl;
+    return result;
   }
+
+  std::cout << "    OFF:SP, LP, DD - expect no change" << std::endl;
+  // Send Short Pulse, Long Pulse, and Double Down
+  // Expect no change
+  tm.HandleShortPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track not off" << std::endl;
+    return result;
+  }
+  tm.HandleLongPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track not off" << std::endl;
+    return result;
+  }
+  tm.HandleDoubleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track not off" << std::endl;
+    return result;
+  }
+
+  std::cout << "    REC:SP, DD - expect no change" << std::endl;
+  // Transition to Record
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track not in record" << std::endl;
+    return result;
+  }
+  // Send Short Pulse, Double Down
+  // Expect no change
+  std::cout << "    REC:SP, DD - expect no change" << std::endl;
+  tm.HandleShortPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track not in Record" << std::endl;
+    return result;
+  }
+  tm.HandleDoubleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track not in Record" << std::endl;
+    return result;
+  }
+
+  std::cout << "    PLY:SP, LP - expect no change" << std::endl;
+  // Transition to Play
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track not in playback" << std::endl;
+    return result;
+  }
+  // Send Short Pulse and Long Pulse
+  // Expect no change
+  tm.HandleShortPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track not in playback" << std::endl;
+    return result;
+  }
+  tm.HandleLongPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track not in playback" << std::endl;
+    return result;
+  }
+
+  std::cout << "    OVD:SP - expect no change" << std::endl;
+  // Transition to Overdub
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackOverdubbing();
+  if (!result) {
+    std::cout << "error: track not in overdubbing" << std::endl;
+    return result;
+  }
+  // Send Short Pulse
+  // Expect no change
+  tm.HandleShortPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackOverdubbing();
+  if (!result) {
+    std::cout << "error: track not in overdubbing" << std::endl;
+    return result;
+  }
+
+  std::cout << "    RPT:SP, LP, DD - expect no change" << std::endl;
+  // Transition to Repeat
+  tm.HandleLongPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlaybackRepeat();
+  if (!result) {
+    std::cout << "error: track not in repeat" << std::endl;
+    return result;
+  }
+  // Send Short Pulse, Double Down, and Long Pulse
+  // Expect no change
+  tm.HandleShortPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlaybackRepeat();
+  if (!result) {
+    std::cout << "error: track not in repeat" << std::endl;
+    return result;
+  }
+  tm.HandleLongPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlaybackRepeat();
+  if (!result) {
+    std::cout << "error: track not in repeat" << std::endl;
+    return result;
+  }
+  tm.HandleDoubleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlaybackRepeat();
+  if (!result) {
+    std::cout << "error: track not in repeat" << std::endl;
+    return result;
+  }
+
+  std::cout << "    MUT:SP - expect no change" << std::endl;
+  // Transition to Mute
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackMuted();
+  if (!result) {
+    std::cout << "error: track not muted" << std::endl;
+    return result;
+  }
+  // Send Short Pulse
+  // Expect no change
+  tm.HandleShortPulseEvent(0);
+  result = tm.tracks.at(0).IsTrackMuted();
+  if (!result) {
+    std::cout << "error: track not muted" << std::endl;
+    return result;
+  }
+
+  // Set track to Off
+  std::cout << "    MUT:DD - expect change to Off **" << std::endl;
+  tm.HandleDoubleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track not off" << std::endl;
+    return result;
+  }
+
+  return result;
+}
+
+bool Test_TrackSwapWhileRecording(TrackManager &tm) {
+  std::cout << "** Test Track Swap While Recording - state machine **" << std::endl;
+  // Starting from Off
+  bool result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 0 not off" << std::endl;
+    return result;
+  }
+
+  // Starting from Off
+  result = tm.tracks.at(1).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 1 not off" << std::endl;
+    return result;
+  }
+
+  // Start 0 recording
+  std::cout << "    Record track 0 **" << std::endl;
+  // Default state - off
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track not in record" << std::endl;
+    return result;
+  }
+
+  std::cout << "    Record track 1 -- Expect Track 0 to be set to playback" << std::endl;
+  tm.HandleDownEvent(1);
+  // Ensure track 1 in recording
+  result = tm.tracks.at(1).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track 1 not in record" << std::endl;
+    return result;
+  }
+
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track 0 not in playback" << std::endl;
+    return result;
+  }
+
+  std::cout << "    Track 0 Play to Off, Track 1 is Rec so it should switch to Play" << std::endl;
+  // set both to off
+  tm.HandleDoubleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 0 not off" << std::endl;
+    return result;
+  }
+
+  result = tm.tracks.at(1).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track 0 not in playback" << std::endl;
+    return result;
+  }
+  std::cout << "    Track 1 Play to Off" << std::endl;
+  tm.HandleDoubleDownEvent(1);
+  result = tm.tracks.at(1).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 1 not off" << std::endl;
+    return result;
+  }
+  return result;
+}
+
+void Test_TrackRecordingNewTrackPlayToOff(TrackManager &tm) {
+}
+
+void Test_RecordingSingleTrackWithData(TrackManager &tm) {
 }
 
 int main() {
   std::cout << "** test_state_machine.cpp **" << std::endl;
-  Test_Off_To_Record(tm);
-  Test_Record_To_Playback(tm);
-  Test_Playback_To_Overdub(tm);
-  Test_Overdub_To_Playback(tm);
-  Test_Playback_To_Mute(tm);
-  Test_Mute_To_Playback(tm);
-  Test_Playback_To_Off(tm);
-  Test_Off_To_Record(tm);
-  Test_Record_To_Repeat(tm);
-  Test_Repeat_To_Mute(tm);
-  Test_Mute_To_Off(tm);
+#if 0
+  bool result = DebugTesting(tm);
+  if (!result) {
+    std::cout << "---> TEST FAILED" << std::endl;
+  }
+#else
+  bool result = Test_NormalUseCases(tm);
+  if (!result) {
+    std::cout << "---> TEST FAILED" << std::endl;
+  }
+
+  result = Test_AbnormalUseCases(tm);
+  if (!result) {
+    std::cout << "---> TEST FAILED" << std::endl;
+  }
+
+  result = Test_TrackSwapWhileRecording(tm);
+  if (!result) {
+    std::cout << "---> TEST FAILED" << std::endl;
+  }
+#endif
+
   return 0;
 }

@@ -10,6 +10,10 @@ TrackManager::TrackManager() {
 
 // If current track is REC/OVD and new track is REC/OVD -- push current track to Playback
 void TrackManager::NewTrackRecordingRequestWhileRecording(uint32_t track_number) {
+#ifdef DTEST_VERBOSE
+  std::cout << "TM:NTRRWR:LTN:" << unsigned(last_track_number) << ":TN:" << unsigned(track_number) << std::endl;
+#endif
+
   if (last_track_number != track_number) {
     if (tracks.at(last_track_number).IsTrackInRecord()) {
       HandleIndexUpdate_Recording_OnExitState(last_track_number);
@@ -495,7 +499,46 @@ void TrackManager::HandleMuteUnmuteTracks(uint16_t tracks_to_mute_unmute) {
 /*
  * State Machine Methods
  */
+
+void TrackManager::SyncTrackManagerStateWithTrackState(uint32_t track_number) {
+  if (last_track_number == track_number) {
+    return;
+  }
+  // Special case -- if previous operation was a record/overdub on a different track
+  // we must set it to playback then continue with syncing
+  if (tracks.at(last_track_number).IsTrackOverdubbing() ||
+      tracks.at(last_track_number).IsTrackInRecord()) {
+      SetState(Play::getInstance(), last_track_number);
+  }
+  if (tracks.at(track_number).IsTrackOff()) {
+    current_state = &Off::getInstance();
+    return;
+  }
+  if (tracks.at(track_number).IsTrackOverdubbing()) {
+    current_state = &Overdub::getInstance();
+    return;
+  }
+  if (tracks.at(track_number).IsTrackInPlayback()) {
+    current_state = &Play::getInstance();
+    return;
+  }
+  if (tracks.at(track_number).IsTrackInPlaybackRepeat()) {
+    current_state = &Repeat::getInstance();
+    return;
+  }
+  if (tracks.at(track_number).IsTrackInRecord()) {
+    current_state = &Record::getInstance();
+    return;
+  }
+  if (tracks.at(track_number).IsTrackMuted()) {
+    current_state = &Mute::getInstance();
+    return;
+  }
+
+}
+
 void TrackManager::SetState(TrackManagerState &new_state, uint32_t track_number) {
+  std::cout << "TM:SS:T:" << track_number << std::endl;
   current_state->exit(*this, track_number);
   current_state = &new_state;
   current_state->enter(*this, track_number);
@@ -528,22 +571,36 @@ void TrackManager::CopyMixdownToBuffer() {
  * IE recording on T0, user presses DN on T1 - we must stop recording on T0 - set it to PLY
  */
 
+// Design Change:
+// When changing tracks, we must sync our current state with that of the track
+// IE: T1 off, T0 REC, T1 DN EVENT -> T0 rec so send Down Event to it
+// Sync state machine with T1 (ie: Off) pass Down Event to T1
+// If not special case ie: REC/OVD, then still resync SM to new track
+
 void TrackManager::HandleDownEvent(uint32_t track_number) {
+  // sync with track
+  SyncTrackManagerStateWithTrackState(track_number);
   current_state->handle_down_event(*this, track_number);
   last_track_number = track_number;
 }
 
 void TrackManager::HandleDoubleDownEvent(uint32_t track_number) {
+  // sync with track
+  SyncTrackManagerStateWithTrackState(track_number);
   current_state->handle_double_down_event(*this, track_number);
   last_track_number = track_number;
 }
 
 void TrackManager::HandleShortPulseEvent(uint32_t track_number) {
+  // sync with track
+  SyncTrackManagerStateWithTrackState(track_number);
   current_state->handle_short_pulse_event(*this, track_number);
   last_track_number = track_number;
 }
 
 void TrackManager::HandleLongPulseEvent(uint32_t track_number) {
+  // sync with track
+  SyncTrackManagerStateWithTrackState(track_number);
   current_state->handle_long_pulse_event(*this, track_number);
   last_track_number = track_number;
 }
