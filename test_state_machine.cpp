@@ -15,10 +15,18 @@ bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
   return true;
 }
 
+void DisplayIndexes(TrackManager &tm, uint32_t track_number) {
+  std::cout << "TM:GMCI:" << tm.GetMasterCurrentIndex() << std::endl;
+  std::cout << "TM:GMEI:" << tm.GetMasterEndIndex() << std::endl;
+  std::cout << "TM:T:" << track_number << ":SI " << tm.tracks.at(track_number).GetStartIndex();
+  std::cout << ":CI " << tm.tracks.at(track_number).GetCurrentIndex();
+  std::cout << ":EI " << tm.tracks.at(track_number).GetEndIndex() << std::endl << std::endl;
+}
+
 bool DebugTesting(TrackManager &tm) {
   int idx = 0;
   bool result = true;
-  std::cout << "** Debug Testing **" << std::endl;
+  std::cout << std::endl << "** Debug Testing **" << std::endl;
 
   for (idx = 0; idx < MAX_TRACK_COUNT; idx++) {
     tm.tracks.at(idx).IsTrackOff();
@@ -45,7 +53,7 @@ bool DebugTesting(TrackManager &tm) {
 }
 
 bool Test_NormalUseCases(TrackManager &tm) {
-  std::cout << "** Test Normal Use Cases - state machine **" << std::endl;
+  std::cout << std::endl << "** Test Normal Use Cases - state machine **" << std::endl;
 
   std::cout << "    Test Off To Record **" << std::endl;
   // Default state - off
@@ -142,7 +150,7 @@ bool Test_NormalUseCases(TrackManager &tm) {
 }
 
 bool Test_AbnormalUseCases(TrackManager &tm) {
-  std::cout << "** Test Abnormal Use Cases - state machine **" << std::endl;
+  std::cout << std::endl << "** Test Abnormal Use Cases - state machine **" << std::endl;
   // Starting from Off
   bool result = tm.tracks.at(0).IsTrackOff();
   if (!result) {
@@ -295,7 +303,7 @@ bool Test_AbnormalUseCases(TrackManager &tm) {
 }
 
 bool Test_TrackSwapWhileRecording(TrackManager &tm) {
-  std::cout << "** Test Track Swap While Recording - state machine **" << std::endl;
+  std::cout << std::endl << "** Test Track Swap While Recording - state machine **" << std::endl;
   // Starting from Off
   bool result = tm.tracks.at(0).IsTrackOff();
   if (!result) {
@@ -359,6 +367,125 @@ bool Test_TrackSwapWhileRecording(TrackManager &tm) {
   return result;
 }
 
+bool Test_TrackRecordingSwapWithIndexes(TrackManager &tm) {
+  std::cout << std::endl << "** Test Track Swap While Recording Index Checks - state machine **" << std::endl;
+  // Starting from Off
+  bool result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 0 not off" << std::endl;
+    return result;
+  }
+
+  // Starting from Off
+  result = tm.tracks.at(1).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 1 not off" << std::endl;
+    return result;
+  }
+
+  result = tm.GetMasterCurrentIndex() == 0; 
+  if (!result) {
+    std::cout << "error: master current index: " << tm.GetMasterCurrentIndex() << ", exp 0" << std::endl;
+    return result;
+  }
+
+  result = tm.GetMasterEndIndex() == 0;
+  if (!result) {
+    std::cout << "error: master end index: " << tm.GetMasterEndIndex() << ", exp 0" << std::endl;
+    return result;
+  }
+
+
+  // Start 0 recording
+  std::cout << "    Record track 0 **" << std::endl;
+  // Default state - off
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track not in record" << std::endl;
+    return result;
+  }
+
+  DisplayIndexes(tm, 0);
+  std::cout << "    StateProcess 2x" << std::endl;
+  tm.StateProcess(0); 
+  tm.StateProcess(0);
+  DisplayIndexes(tm, 0);
+
+  std::cout << "    T0 R -> P" << std::endl;
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track 0 not in playback" << std::endl;
+    return result;
+  }
+  DisplayIndexes(tm, 0);
+  std::cout << "    T0 process 3x, 0->1->2->0->1->2" << std::endl;
+  tm.StateProcess(0);
+  DisplayIndexes(tm, 0);
+  tm.StateProcess(0);
+  DisplayIndexes(tm, 0);
+  tm.StateProcess(0);
+  DisplayIndexes(tm, 0);
+  tm.StateProcess(0);
+  DisplayIndexes(tm, 0);
+  tm.StateProcess(0);
+  DisplayIndexes(tm, 0);
+
+  std::cout << "    Record track 1" << std::endl;
+  tm.HandleDownEvent(1);
+  // Ensure track 1 in recording
+  result = tm.tracks.at(1).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track 1 not in record" << std::endl;
+    return result;
+  }
+
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track 0 not in playback" << std::endl;
+    return result;
+  }
+
+  std::cout << "    T1 Rec, T0 Playback" << std::endl;
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+
+  std::cout << "    T1 process 2x" << std::endl;
+  tm.StateProcess(1); 
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+  tm.StateProcess(1);
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+
+  std::cout << "    Track 0 Play to Off, Track 1 is Rec so it should switch to Play" << std::endl;
+  // set both to off
+  tm.HandleDoubleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 0 not off" << std::endl;
+    return result;
+  }
+
+  result = tm.tracks.at(1).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track 0 not in playback" << std::endl;
+    return result;
+  }
+  std::cout << "    Track 1 Play to Off" << std::endl;
+  tm.HandleDoubleDownEvent(1);
+  result = tm.tracks.at(1).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 1 not off" << std::endl;
+    return result;
+  }
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+
+  return result;
+}
+
 void Test_TrackRecordingNewTrackPlayToOff(TrackManager &tm) {
 }
 
@@ -387,6 +514,11 @@ int main() {
   if (!result) {
     std::cout << "---> TEST FAILED" << std::endl;
   }
+  result = Test_TrackRecordingSwapWithIndexes(tm);
+  if (!result) {
+    std::cout << "---> TEST FAILED" << std::endl;
+  }
+
 #endif
 
   return 0;

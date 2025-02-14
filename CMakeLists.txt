@@ -24,6 +24,7 @@ add_executable(test_mixer ${COMMON_SOURCES} ${TEST_SOURCES_MIXER})
 add_executable(test_track ${COMMON_SOURCES} ${TEST_SOURCES_TRACK})
 add_executable(test_track_manager ${COMMON_SOURCES} ${TEST_SOURCES_TRACK_MANAGER})
 add_executable(test_group_manager ${COMMON_SOURCES} ${TEST_SOURCES_GROUP_MANAGER})
+remove_definitions(DTEST_TM)
 add_executable(test_state_machine ${COMMON_SOURCES} ${TEST_SOURCES_STATE_MACHINE})
 
 

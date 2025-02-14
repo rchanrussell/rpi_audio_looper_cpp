@@ -159,6 +159,10 @@ void TrackManager::HandleIndexUpdate_Overdubbing_OnEnterState(uint32_t track_num
 // OnEnterState (from another state)
 // -> Set CurrentIndex to MasterCurrentIndex
 void TrackManager::HandleIndexUpdate_Playback_OnEnterState(uint32_t track_number) {
+  // If entering play and MCI == MEI, set MCI to 0, IE restart from beginning
+  if (master_current_index == master_end_index) {
+    master_current_index = 0;
+  }
   tracks.at(track_number).SetCurrentIndex(master_current_index);
 }
 
@@ -217,6 +221,17 @@ void TrackManager::HandleIndexUpdate_Playback_AlreadyInState(uint32_t track_numb
   if (master_current_index == MAX_BLOCK_COUNT) {
     HandleIndexUpdate_ReachedEndOfAvailableSpace(track_number);
   }
+  // ensure not recording - which will be current_state if we are
+  // this track may be in playback but another could be rec/ovd which means
+  // it will be increasing master end index
+  if (tracks.at(last_track_number).IsTrackOverdubbing() ||
+      tracks.at(last_track_number).IsTrackInRecord()) {
+    return;
+  }
+  if (master_current_index > master_end_index) {
+    master_current_index = 0;
+    tracks.at(track_number).SetCurrentIndex(master_current_index);
+  }
 }
 
 // Re-enterState (from PlaybackRepeat state)
@@ -231,7 +246,7 @@ void TrackManager::HandleIndexUpdate_PlaybackRepeat_AlreadyInState(uint32_t trac
 
   if (tracks.at(track_number).GetCurrentIndex() > tracks.at(track_number).GetEndIndex()) {
     tracks.at(track_number).SetCurrentIndex(tracks.at(track_number).GetStartIndex());
-  }
+  } 
 
   // If we're at the end of available data space for the master track:
   // Don't call generic handler as we don't want to update the track's current index
@@ -240,6 +255,17 @@ void TrackManager::HandleIndexUpdate_PlaybackRepeat_AlreadyInState(uint32_t trac
   if (master_current_index == MAX_BLOCK_COUNT) {
     // master always starts at 0
     master_current_index = 0;
+  }
+  // ensure not recording - which will be current_state if we are
+  // this track may be in playback but another could be rec/ovd which means
+  // it will be increasing master end index
+  if (tracks.at(last_track_number).IsTrackOverdubbing() ||
+      tracks.at(last_track_number).IsTrackInRecord()) {
+    return;
+  }
+  if (master_current_index > master_end_index) {
+    master_current_index = 0;
+    tracks.at(track_number).SetCurrentIndex(master_current_index);
   }
 }
 
@@ -251,7 +277,8 @@ void TrackManager::HandleIndexUpdate_PlaybackRepeat_AlreadyInState(uint32_t trac
 // -> Set EndIndex to CurrentIndex
 // -> If CurrentIndex > MasterEndIndex, Set MasterEndIndex to CurrentIndex
 void TrackManager::HandleIndexUpdate_Recording_OnExitState(uint32_t track_number) {
-  uint32_t current_index = tracks.at(track_number).GetCurrentIndex();
+  uint32_t current_index = master_current_index;
+// tracks.at(track_number).GetCurrentIndex();
   tracks.at(track_number).SetEndIndex(current_index);
   if (current_index > master_end_index) {
     master_end_index = current_index;
@@ -262,7 +289,8 @@ void TrackManager::HandleIndexUpdate_Recording_OnExitState(uint32_t track_number
 // -> If CurrentIndex > EndIndex, Set EndIndex to CurrentIndex
 // -> If CurrentIndex > MasterEndIndex, Set MasterEndIndex to CurrentIndex
 void TrackManager::HandleIndexUpdate_Overdubbing_OnExitState(uint32_t track_number) {
-  uint32_t current_index = tracks.at(track_number).GetCurrentIndex();
+  uint32_t current_index = master_current_index;
+//tracks.at(track_number).GetCurrentIndex();
   if (current_index > tracks.at(track_number).GetEndIndex()) {
     tracks.at(track_number).SetEndIndex(current_index);
   }
@@ -538,7 +566,6 @@ void TrackManager::SyncTrackManagerStateWithTrackState(uint32_t track_number) {
 }
 
 void TrackManager::SetState(TrackManagerState &new_state, uint32_t track_number) {
-  std::cout << "TM:SS:T:" << track_number << std::endl;
   current_state->exit(*this, track_number);
   current_state = &new_state;
   current_state->enter(*this, track_number);
@@ -605,3 +632,6 @@ void TrackManager::HandleLongPulseEvent(uint32_t track_number) {
   last_track_number = track_number;
 }
 
+void TrackManager::StateProcess(uint32_t track_number) {
+  current_state->active(*this, track_number);
+}
