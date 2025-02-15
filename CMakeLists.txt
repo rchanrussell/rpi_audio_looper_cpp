@@ -4,11 +4,6 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_CXX_FLAGS -Wall)
 set(CMAKE_SCAN_FOR_MODULES)
-add_compile_definitions(DTEST_TM)
-add_compile_definitions(DTEST_GM)
-add_compile_definitions(DTEST_VERBOSE)
-## add_compile_definitions(DTEST_VERBOSE_EXTRA)
-## add_compile_definitions(DTEST_TM_VERBOSE)
 project(test)
 
 set(COMMON_SOURCES data_block.cpp mixer.cpp track.cpp track_manager.cpp group_manager.cpp track_manager_states.cpp)
@@ -20,12 +15,23 @@ set(TEST_SOURCES_GROUP_MANAGER test_group_manager.cpp)
 set(TEST_SOURCES_STATE_MACHINE test_state_machine.cpp)
 
 ## add_executable(application ${COMMON_SOURCES} ${TARGET_SOURCES})
+
+## TEST COMPILATIONS - add the extra defines for debug output
+add_compile_definitions(DTEST_TM)
+add_compile_definitions(DTEST_GM)
+add_compile_definitions(DTEST_VERBOSE)
+## add_compile_definitions(DTEST_VERBOSE_EXTRA)
+## add_compile_definitions(DTEST_TM_VERBOSE)
+
+add_executable(test_state_machine ${COMMON_SOURCES} ${TEST_SOURCES_STATE_MACHINE})
+
 add_executable(test_mixer ${COMMON_SOURCES} ${TEST_SOURCES_MIXER})
 add_executable(test_track ${COMMON_SOURCES} ${TEST_SOURCES_TRACK})
 add_executable(test_track_manager ${COMMON_SOURCES} ${TEST_SOURCES_TRACK_MANAGER})
 add_executable(test_group_manager ${COMMON_SOURCES} ${TEST_SOURCES_GROUP_MANAGER})
-remove_definitions(DTEST_TM)
-add_executable(test_state_machine ${COMMON_SOURCES} ${TEST_SOURCES_STATE_MACHINE})
-
+target_compile_definitions(test_mixer PUBLIC DTEST_AIS)
+target_compile_definitions(test_track PUBLIC DTEST_TM_AIS)
+target_compile_definitions(test_track_manager PUBLIC DTEST_TM_AIS)
+target_compile_definitions(test_group_manager PUBLIC DTEST_TM_AIS)
 
 ## target_link_libraries(test PRIVATE wiringPi etc.. normal g++ -l items)

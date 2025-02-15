@@ -12,6 +12,7 @@
 // State Specific Methods
 void Off::enter(TrackManager &tm, uint32_t track_number) {
   tm.SetTrackState_Off(track_number);
+  tm.AreAllTracksOff(); // if true, it will automatically set indexes
 }
 
 void Off::exit(TrackManager &tm, uint32_t track_number) {

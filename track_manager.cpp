@@ -278,7 +278,6 @@ void TrackManager::HandleIndexUpdate_PlaybackRepeat_AlreadyInState(uint32_t trac
 // -> If CurrentIndex > MasterEndIndex, Set MasterEndIndex to CurrentIndex
 void TrackManager::HandleIndexUpdate_Recording_OnExitState(uint32_t track_number) {
   uint32_t current_index = master_current_index;
-// tracks.at(track_number).GetCurrentIndex();
   tracks.at(track_number).SetEndIndex(current_index);
   if (current_index > master_end_index) {
     master_end_index = current_index;
@@ -290,7 +289,6 @@ void TrackManager::HandleIndexUpdate_Recording_OnExitState(uint32_t track_number
 // -> If CurrentIndex > MasterEndIndex, Set MasterEndIndex to CurrentIndex
 void TrackManager::HandleIndexUpdate_Overdubbing_OnExitState(uint32_t track_number) {
   uint32_t current_index = master_current_index;
-//tracks.at(track_number).GetCurrentIndex();
   if (current_index > tracks.at(track_number).GetEndIndex()) {
     tracks.at(track_number).SetEndIndex(current_index);
   }
@@ -326,14 +324,14 @@ void TrackManager::HandleIndexUpdate_AlreadyInState_AllStates() {
     if (tracks.at(track_number).IsTrackInRecord()) {
       HandleIndexUpdate_Recording_AlreadyInState(track_number);
       // Update the _end_index 
-#ifdef DTEST_TM
+#ifdef DTEST_TM_AIS
       HandleIndexUpdate_Recording_OnExitState(track_number);
 #endif
       continue; // don't waste time doing rest of the checks
     }
     if (tracks.at(track_number).IsTrackOverdubbing()) {
       HandleIndexUpdate_Overdubbing_AlreadyInState(track_number);
-#ifdef DTEST_TM
+#ifdef DTEST_TM_AIS
       HandleIndexUpdate_Overdubbing_OnExitState(track_number);
 #endif
       continue; // don't waste time doing rest of the checks
@@ -342,14 +340,14 @@ void TrackManager::HandleIndexUpdate_AlreadyInState_AllStates() {
     if (tracks.at(track_number).IsTrackInPlayback() ||
         tracks.at(track_number).IsTrackMuted()) {
       HandleIndexUpdate_Playback_AlreadyInState(track_number);
-#ifdef DTEST_TM
+#ifdef DTEST_TM_AIS
       HandleIndexUpdate_Playback_OnExitState(track_number);
 #endif
       continue; // don't waste time doing rest of the checks
     }
     if (tracks.at(track_number).IsTrackInPlaybackRepeat()) {
       HandleIndexUpdate_PlaybackRepeat_AlreadyInState(track_number);
-#ifdef DTEST_TM
+#ifdef DTEST_TM_AIS
       HandleIndexUpdate_PlaybackRepeat_OnExitState(track_number);
 #endif
       continue; // don't waste time doing rest of the checks
@@ -635,3 +633,16 @@ void TrackManager::HandleLongPulseEvent(uint32_t track_number) {
 void TrackManager::StateProcess(uint32_t track_number) {
   current_state->active(*this, track_number);
 }
+
+bool TrackManager::AreAllTracksOff() {
+  for (auto &t : tracks) {
+    if (!t.IsTrackOff()) {
+      return false;
+    }
+  }
+  // reset master's indexes
+  master_current_index = 0;
+  master_end_index = 0;
+  return true;
+}
+

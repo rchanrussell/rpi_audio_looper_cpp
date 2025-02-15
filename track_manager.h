@@ -163,6 +163,9 @@ class TrackManager {
   void SetTrackState_Repeat(uint32_t track_number);
   void SetTrackState_Mute(uint32_t track_number);
 
+  // Reset condition -- if all tracks are off - reset our master current and end indexes
+  bool AreAllTracksOff();
+
   // Active
   void HandleIndexUpdate_AlreadyInState_AllStates();
 
