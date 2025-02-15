@@ -859,6 +859,233 @@ bool Test_TrackPlaybackNewTrackStartsRecordingIndexes(TrackManager &tm) {
   return true;
 }
 
+bool Test_TrackPlaybackNewTrackStartsRecordingThenRepeatsIndexes(TrackManager &tm) {
+  std::cout << std::endl << "** Test Track in playback then new track starts recording then repeats with Index Checks - state machine **" << std::endl;
+
+  struct Indexes exp = {0, 0, 0, 0, 0};
+  // Starting from Off
+  bool result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 0 not off" << std::endl;
+    return result;
+  }
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  result = tm.tracks.at(1).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 1 not off" << std::endl;
+    return result;
+  }
+  if (!VerifyIndexes(tm, exp, 1)) { return false; }
+
+  // Start 0 recording
+  std::cout << "    Record track 0 **" << std::endl;
+  // Default state - off
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track not in record" << std::endl;
+    return result;
+  }
+
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  DisplayIndexes(tm, 0);
+  std::cout << "    StateProcess 2x" << std::endl;
+  tm.StateProcess(0);
+  tm.StateProcess(0);
+
+  exp.gmci = 2;
+  exp.gmei = 0;
+  exp.t_ci = 2;
+  exp.t_ei = 0;
+  DisplayIndexes(tm, 0);
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  std::cout << "    Set track 0 to playback" << std::endl;
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track 0 not in playback" << std::endl;
+    return result;
+  }
+
+  DisplayIndexes(tm, 0);
+  exp.gmei = 2;
+  exp.t_ei = 2;
+  exp.gmci = 0;
+  exp.t_ci = 0;
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  // Play 1 block then start recording on T1
+  std::cout << "    Process t0 in play" << std::endl;
+  tm.StateProcess(0);
+
+  exp.gmei = 2;
+  exp.gmci = 1;
+  exp.t_ci = 1;
+  exp.t_ei = 2;
+  exp.t_si = 0;
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  std::cout << "    Press record on track 1" << std::endl;
+  tm.HandleDownEvent(1);
+  // Ensure track 1 in recording
+  result = tm.tracks.at(1).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track 1 not in record" << std::endl;
+    return result;
+  }
+
+  result = tm.tracks.at(0).IsTrackInPlayback();
+  if (!result) {
+    std::cout << "error: track 0 not in playback" << std::endl;
+    return result;
+  }
+
+  exp.gmci = 1;
+  exp.gmei = 2;
+  // T0
+  exp.t_ci = 1;
+  exp.t_ei = 2;
+  exp.t_si = 0;
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  // T1
+  exp.t_ci = 1;
+  exp.t_ei = 0;
+  exp.t_si = 1;
+  if (!VerifyIndexes(tm, exp, 1)) { return false; }
+
+  std::cout << "    StateProcess 2x" << std::endl;
+  tm.StateProcess(1);
+  tm.StateProcess(1);
+
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+
+  exp.gmci = 3;
+  exp.gmei = 2;
+  // T0
+  exp.t_ci = 3;
+  exp.t_ei = 2;
+  exp.t_si = 0;
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  // T1
+  exp.t_ci = 3;
+  exp.t_ei = 0;
+  exp.t_si = 1;
+  if (!VerifyIndexes(tm, exp, 1)) { return false; }
+
+  std::cout << "    T1 to repeat" << std::endl;
+  tm.HandleLongPulseEvent(1);
+  result = tm.tracks.at(1).IsTrackInPlaybackRepeat();
+  if (!result) {
+    std::cout << "error: track 1 not in playback repeat" << std::endl;
+    return result;
+  }
+
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+  exp.gmci = 0;
+  exp.gmei = 3;
+  // T0
+  exp.t_ci = 3; // T1 to play does no reset T0's current index -- PerformMixdown
+  // does not use track's current index, uses master current index unless in repeat
+  // so this is to be expected, playback doesn't use it, only repeat does
+  exp.t_ei = 2;
+  exp.t_si = 0;
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  // T1
+  exp.t_ci = 1; // repeat - CI is sync'd with SI not MCI
+  exp.t_ei = 3;
+  exp.t_si = 1;
+  if (!VerifyIndexes(tm, exp, 1)) { return false; }
+
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+  std::cout << "    SP1" << std::endl;
+  tm.StateProcess(1);
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+  std::cout << "    SP1" << std::endl;
+  tm.StateProcess(1);
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+  std::cout << "    SP0" << std::endl;
+  tm.StateProcess(0);
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+  std::cout << "    SP0" << std::endl;
+  tm.StateProcess(1);
+  DisplayIndexes(tm, 0);
+  DisplayIndexes(tm, 1);
+
+
+
+  std::cout << "    T0 to Off" << std::endl;
+  // Set T0 Off
+  tm.HandleDoubleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 0 not off" << std::endl;
+    return result;
+  }
+
+  exp.gmci = 0;
+  exp.gmei = 3;
+  // T0
+  exp.t_ci = 0;
+  exp.t_ei = 0;
+  exp.t_si = 0;
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  // T1
+  exp.t_ci = 2;
+  exp.t_ei = 3;
+  exp.t_si = 1;
+  if (!VerifyIndexes(tm, exp, 1)) { return false; }
+
+  result = tm.tracks.at(1).IsTrackInPlaybackRepeat();
+  if (!result) {
+    std::cout << "error: track 1 not in playback repeat" << std::endl;
+    return result;
+  }
+
+  std::cout << "   T1 3 repeat process" << std::endl;
+  tm.StateProcess(1);
+  DisplayIndexes(tm, 1);
+  tm.StateProcess(1);
+  DisplayIndexes(tm, 1);
+  tm.StateProcess(1);
+  DisplayIndexes(tm, 1);
+
+  std::cout << "   T1 to off" << std::endl;
+  tm.HandleDownEvent(1); // To Mute
+  tm.HandleDoubleDownEvent(1); // To Off
+  result = tm.tracks.at(1).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 1 not off" << std::endl;
+    return result;
+  }
+
+  exp.gmci = 0;
+  exp.gmei = 0;
+  // T0
+  exp.t_ci = 0;
+  exp.t_ei = 0;
+  exp.t_si = 0;
+  if (!VerifyIndexes(tm, exp, 0)) { return false; }
+
+  // T1
+  exp.t_ci = 0;
+  exp.t_ei = 0;
+  exp.t_si = 0;
+  if (!VerifyIndexes(tm, exp, 1)) { return false; }
+  return true;
+}
 
 void Test_TrackRecordingNewTrackPlayToOff(TrackManager &tm) {
 }
@@ -898,7 +1125,13 @@ int main() {
   if (!result) {
     std::cout << "---> TEST FAILED" << std::endl;
   }
+
   result = Test_TrackPlaybackNewTrackStartsRecordingIndexes(tm);
+  if (!result) {
+    std::cout << "---> TEST FAILED" << std::endl;
+  }
+
+  result = Test_TrackPlaybackNewTrackStartsRecordingThenRepeatsIndexes(tm);
   if (!result) {
     std::cout << "---> TEST FAILED" << std::endl;
   }

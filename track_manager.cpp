@@ -160,7 +160,7 @@ void TrackManager::HandleIndexUpdate_Overdubbing_OnEnterState(uint32_t track_num
 // -> Set CurrentIndex to MasterCurrentIndex
 void TrackManager::HandleIndexUpdate_Playback_OnEnterState(uint32_t track_number) {
   // If entering play and MCI == MEI, set MCI to 0, IE restart from beginning
-  if (master_current_index == master_end_index) {
+  if (master_current_index >= master_end_index) {
     master_current_index = 0;
   }
   tracks.at(track_number).SetCurrentIndex(master_current_index);
@@ -170,6 +170,10 @@ void TrackManager::HandleIndexUpdate_Playback_OnEnterState(uint32_t track_number
 // OnEnterState (from another state)
 // -> Set CurrentIndex to StartIndex
 void TrackManager::HandleIndexUpdate_PlaybackRepeat_OnEnterState(uint32_t track_number) {
+  // If entering repeat and MCI == MEI, set MCI to 0, IE restart from beginning
+  if (master_current_index >= master_end_index) {
+    master_current_index = 0;
+  }
   tracks.at(track_number).SetCurrentIndex(tracks.at(track_number).GetStartIndex());
 }
 
@@ -631,6 +635,7 @@ void TrackManager::HandleLongPulseEvent(uint32_t track_number) {
 }
 
 void TrackManager::StateProcess(uint32_t track_number) {
+  SyncTrackManagerStateWithTrackState(track_number);
   current_state->active(*this, track_number);
 }
 
