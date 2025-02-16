@@ -75,7 +75,7 @@ class TrackManager {
 
   // DataBuffers
   // Input for Rec and Overdub
-  DataBlock input;
+  DataBlock input_buffer;
 
   // Output for all states
 //  DataBlock mixdown;
@@ -169,15 +169,15 @@ class TrackManager {
   // Active
   void HandleIndexUpdate_AlreadyInState_AllStates();
 
-  // Special function for special case
-  void NewTrackRecordingRequestWhileRecording(uint32_t track_number);
-
   // Data Transfers Copy To Track
   void CopyBufferToTrack(uint32_t track_number);
-  void CopyInputBufferToLocalBuffer(); // Use void* and size in bytes? then copy that to a DataBlock
+
+  // Use void* and size in bytes? then copy that to a DataBlock
+  void CopyToInputBuffer(void *data, uint32_t nsamples);
 
   // Data Transfers always -- Copy Mixdown
-  void CopyMixdownToBuffer(); // Accept pointer to write mixdown DataBlock data to buffer
+  // Accept pointer to write mixdown DataBlock data to buffer
+  void CopyMixdownToBuffer(void *data, uint32_t nsamples);
 
   // Call the current state's versions
   void HandleDownEvent(uint32_t track_number);

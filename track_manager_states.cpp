@@ -51,21 +51,10 @@ Off& Off::getInstance() {
 // Last event received was a record event - copy data from source
 // State Specific Methods
 void Record::enter(TrackManager &tm, uint32_t track_number) {
-
-  // Check if another track in Rec or Overdub - put it in Play
-  // Then resume state transition for the new track
-  // NOTE:if same track, this function just returns
-//  tm.NewTrackRecordingRequestWhileRecording(track_number);
   // Update indexes
   tm.HandleIndexUpdate_Recording_OnEnterState(track_number);
   // update track's state
   tm.SetTrackState_Record(track_number);
-
-  // TODO make this only part of Active which is always called by
-  // 'process' callback when data buffer is ready?
-  // copy data to track
-  // TODO implement buffer storage so this function doesn't
-  // have to know where it came from, just supplies track_number and that's it
 }
 
 void Record::exit(TrackManager &tm, uint32_t track_number) {
@@ -77,16 +66,14 @@ void Record::exit(TrackManager &tm, uint32_t track_number) {
 // But tracks are in various states independent of one another, always
 // call this in Active to ensure always updating when buffers come in/go out
 void Record::active(TrackManager &tm, uint32_t track_number) {
-  // Updeate Indexes
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
-
   // copy data to track
+  tm.CopyBufferToTrack(track_number);
 
   // perform mixdown
   tm.PerformMixdown();
-  // whoever is calling TM (main app?) when the 'process' callback is called
-  // it should handle copy the source buffer to the input buffer then
-  // let this copy the data to the track
+
+  // Updeate Indexes
+  tm.HandleIndexUpdate_AlreadyInState_AllStates();
 }
 
   // Event State Transitions
@@ -120,10 +107,6 @@ Record& Record::getInstance() {
  */
 // Last event received was a overdub event - copy data from source
 void Overdub::enter(TrackManager &tm, uint32_t track_number) {
-  // Check if another track in Rec or Overdub - put it in Play
-  // Then resume state transition for the new track
-  // NOTE:if same track, this function just returns
-//  tm.NewTrackRecordingRequestWhileRecording(track_number);
   // Update indexes
   tm.HandleIndexUpdate_Overdubbing_OnEnterState(track_number);
   // update track's state
@@ -138,10 +121,9 @@ void Overdub::exit(TrackManager &tm, uint32_t track_number) {
 // But tracks are in various states independent of one another, always
 // call this in Active to ensure always updating when buffers come in/go out
 void Overdub::active(TrackManager &tm, uint32_t track_number) {
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
-
-  // Copy track - mix with source - store to track
+  tm.CopyBufferToTrack(track_number);
   tm.PerformMixdown();
+  tm.HandleIndexUpdate_AlreadyInState_AllStates();
 }
 
   // Event State Transitions
@@ -185,8 +167,8 @@ void Play::exit(TrackManager &tm, uint32_t track_number) {
 }
 
 void Play::active(TrackManager &tm, uint32_t track_number) {
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
   tm.PerformMixdown();
+  tm.HandleIndexUpdate_AlreadyInState_AllStates();
 }
 
   // Event State Transitions
@@ -228,8 +210,8 @@ void Repeat::exit(TrackManager &tm, uint32_t track_number) {
 }
 
 void Repeat::active(TrackManager &tm, uint32_t track_number) {
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
   tm.PerformMixdown();
+  tm.HandleIndexUpdate_AlreadyInState_AllStates();
 }
 
   // Event State Transitions
@@ -268,8 +250,8 @@ void Mute::exit(TrackManager &tm, uint32_t track_number) {
 }
 
 void Mute::active(TrackManager &tm, uint32_t track_number) {
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
   tm.PerformMixdown();
+  tm.HandleIndexUpdate_AlreadyInState_AllStates();
 }
 
   // Event State Transitions

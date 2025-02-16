@@ -2,9 +2,14 @@
 #include <iostream>
 #include <iterator>
 #include <sys/time.h>    
+#include <cstdlib>
+#include <unistd.h>
+#include <chrono>
+#include <thread>
 #include "track_manager.h"
 
 static Track test_track(0.0f);
+static TrackManager tm;
 
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
   for (unsigned long int i = 0; i < expected.samples.size(); i++) {
@@ -185,18 +190,97 @@ void Test_MixblocksWithTiming() {
 
   gettimeofday(&t2, NULL);
   std::cout << t2.tv_sec - t1.tv_sec << "s, " << t2.tv_usec - t1.tv_usec << "us" << std::endl;
-#ifdex DTEST_VERBOSE
+#ifdef DTEST_VERBOSE
   tm.mixdown.PrintBlock();
 #endif
+}
+
+void Test_CreateVoidPtrMemConvertToDataBlock() {
+  uint8_t val = 1;
+  DataBlock ip(0.0f);
+  int *ptr =(int *)calloc(1024, 1);
+  if (!ptr) { std::cout << "Calloc failed" << std::endl; return; }
+
+  for (int idx=0; idx<1024; idx++) {
+    if (idx > 0 && (idx % 128 == 0)) { val++; }
+    ptr[idx] = val;
+  }
+
+  // below does not compile
+  // ip.samples = (std::array<float, SAMPLES_PER_BLOCK>)*ptr;
+
+  // just return the address of .samples -- does NOT work
+  // memcpy(&ip.samples, ptr, SAMPLES_PER_BLOCK);
+  struct timeval t1, t2, tdiff;
+
+  gettimeofday(&t1, NULL);
+  std::copy(ptr, ptr + SAMPLES_PER_BLOCK, begin(ip.samples));
+  gettimeofday(&t2, NULL);
+  timersub(&t2, &t1, &tdiff);
+  std::cout << "td: " << tdiff.tv_sec << "," << tdiff.tv_usec << std::endl;
+
+  for (int idx=0; idx <SAMPLES_PER_BLOCK; idx++) {
+    if (ptr[idx] != ip.samples.at(idx)) {
+      std::cout << "memcpy ptr -- mismatch at " << idx << std::endl;
+      std::cout << "ptr: " << unsigned(ptr[idx]) << ", ip.s[idx]:" << ip.samples.at(idx) << std::endl;
+      break;
+    }
+  }
+
+  gettimeofday(&t1, NULL);
+  for (int idx =0; idx < SAMPLES_PER_BLOCK; idx++) {
+    ip.samples.at(idx) = ptr[idx];
+  }
+  gettimeofday(&t2, NULL);
+  timersub(&t2, &t1, &tdiff);
+  std::cout << "td: " << tdiff.tv_sec << "," << tdiff.tv_usec << std::endl;
+
+  for (int idx=0; idx <SAMPLES_PER_BLOCK; idx++) {
+    if (ptr[idx] != ip.samples.at(idx)) {
+      std::cout << "for:ip.s[i]=ptr[i] -- mismatch at " << idx << std::endl;
+      std::cout << "ptr: " << unsigned(ptr[idx]) << ", ip.s[idx]:" << ip.samples.at(idx) << std::endl;
+      break;
+    }
+  }
+
+  tm.CopyToInputBuffer(ptr ,128);
+  tm.CopyBufferToTrack(0);
+  DataBlock db = tm.tracks.at(0).GetBlockData(0);
+  tm.tracks.at(1).SetBlockDataToSameValue(0, 2.0f);
+  db.PrintBlock();
+  db = tm.tracks.at(1).GetBlockData(0);
+  db.PrintBlock();
+  tm.tracks.at(0).SetEndIndex(1);
+  tm.tracks.at(1).SetEndIndex(1);
+  tm.SetMasterEndIndex(1);
+  tm.SetTrackState_Playback(0);
+  tm.SetTrackState_Playback(1);
+  tm.PerformMixdown();
+  tm.mixdown.PrintBlock();
+
+  std::cout << "    copymixdown" << std::endl;
+  int *pm =(int *)calloc(1024,1);
+  tm.CopyMixdownToBuffer(pm, 128);
+  for (int idx=0; idx<128; idx++) {
+    std::cout << pm[idx] << ", ";
+    if (idx % 8 == 0) { std::cout << std::endl; }
+  }
+
+  free(ptr);
+  free(pm);
 }
 
 
 // TODO Turn this into a test
 int main() {
   std::cout << "** test_track.cpp **" << std::endl;
+#if 0
   Test_SimulateRecord(test_track);
   Test_SimulatePlayback(test_track);
   Test_SimulateOverdub(test_track);
+#endif
+
+  Test_CreateVoidPtrMemConvertToDataBlock();
 
   return 0;
 }

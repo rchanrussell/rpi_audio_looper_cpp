@@ -8,23 +8,6 @@ TrackManager::TrackManager() {
   current_state = &Off::getInstance();
 }
 
-// If current track is REC/OVD and new track is REC/OVD -- push current track to Playback
-void TrackManager::NewTrackRecordingRequestWhileRecording(uint32_t track_number) {
-#ifdef DTEST_VERBOSE
-  std::cout << "TM:NTRRWR:LTN:" << unsigned(last_track_number) << ":TN:" << unsigned(track_number) << std::endl;
-#endif
-
-  if (last_track_number != track_number) {
-    if (tracks.at(last_track_number).IsTrackInRecord()) {
-      HandleIndexUpdate_Recording_OnExitState(last_track_number);
-    }
-    if (tracks.at(last_track_number).IsTrackOverdubbing()) {
-      HandleIndexUpdate_Overdubbing_OnExitState(last_track_number);
-    }
-    tracks.at(last_track_number).SetTrackToInPlayback();
-  }
-}
-
 // Perform Mixdown
 // Pass empty_block in place of tracks off/muted/in other group
 void TrackManager::PerformMixdown() {
@@ -578,16 +561,25 @@ void TrackManager::SetState(TrackManagerState &new_state, uint32_t track_number)
  */
 
 void TrackManager::CopyBufferToTrack(uint32_t track_number) {
-  // memcpy?
-  // Convert pointer data to DataBlock std::array of floats--> .samples
-  DataBlock data;
-  // call track.at().SetBuffer
-  tracks.at(track_number).SetBlockData(tracks.at(track_number).GetCurrentIndex(),
-                                       data);
+  tracks.at(track_number).SetBlockData(tracks.at(track_number).GetCurrentIndex(), input_buffer);
 }
 
-void TrackManager::CopyMixdownToBuffer() {
-  // convert from mixdown DataBlock back to pointer and memcpy?
+void TrackManager::CopyToInputBuffer(void *d, uint32_t nsamples) {
+  int *data = (int *)d;
+  if (nsamples > SAMPLES_PER_BLOCK) {
+    std::copy(data, data + SAMPLES_PER_BLOCK, begin(input_buffer.samples));
+  } else {
+    std::copy(data, data + nsamples, begin(input_buffer.samples));
+  }
+}
+
+void TrackManager::CopyMixdownToBuffer(void *d, uint32_t nsamples) {
+  int *data = (int *)d;
+  if (nsamples > SAMPLES_PER_BLOCK) {
+    std::copy(begin(mixdown.samples), end(mixdown.samples), data);
+  } else {
+    std::copy(begin(mixdown.samples), begin(mixdown.samples) + nsamples, data);
+  }
 }
 
 /*

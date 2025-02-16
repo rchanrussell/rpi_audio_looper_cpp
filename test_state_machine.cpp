@@ -4,6 +4,7 @@
 #include <chrono>
 #include <thread>
 #include <sys/time.h>    
+#include <unistd.h>
 #include "track_manager.h"
 
 static TrackManager tm;
@@ -1090,7 +1091,85 @@ bool Test_TrackPlaybackNewTrackStartsRecordingThenRepeatsIndexes(TrackManager &t
 void Test_TrackRecordingNewTrackPlayToOff(TrackManager &tm) {
 }
 
-void Test_RecordingSingleTrackWithData(TrackManager &tm) {
+bool Test_RecordingSingleTrackWithData(TrackManager &tm) {
+  std::cout << std::endl << "** Test Recording with data - state machine **" << std::endl;
+
+  bool result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 0 not off" << std::endl;
+    return result;
+  }
+
+  result = tm.tracks.at(1).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 1 not off" << std::endl;
+    return result;
+  }
+
+  // Input
+  int *ptr =(int *)calloc(1024, 1);
+  if (!ptr) { std::cout << "Calloc failed" << std::endl; return false; }
+  uint8_t val = 1; 
+  for (int idx=0; idx<1024; idx++) {
+    if (idx > 0 && (idx % 128 == 0)) { val++; }
+    ptr[idx] = val;
+  }
+
+  // Output
+  int *pm =(int *)calloc(1024,1);
+
+  // Start 0 recording
+  std::cout << "    Record track 0 **" << std::endl;
+  // Default state - off
+  tm.HandleDownEvent(0);
+  result = tm.tracks.at(0).IsTrackInRecord();
+  if (!result) {
+    std::cout << "error: track not in record" << std::endl;
+    return result;
+  }
+
+  struct timeval t1, t2, tdiff;
+  gettimeofday(&t1, NULL);
+
+  // Everytime Process callback (JackAudio) or the input buffer is ready
+  // do the following three steps
+  // for JackAudio, ptr and pm will actually be jack ports
+  // the other handle events will be called by the IO system (currently in
+  // it is in a functional state in no-source controlled code
+
+  tm.CopyToInputBuffer(ptr, SAMPLES_PER_BLOCK);
+  tm.StateProcess(0);
+  tm.CopyMixdownToBuffer(pm, 128);
+
+  gettimeofday(&t2, NULL);
+
+  timersub(&t2, &t1, &tdiff);
+  std::cout << "td: " << tdiff.tv_sec << "," << tdiff.tv_usec << std::endl;
+  //mci,mei,tci,tei,tsi
+  struct Indexes e = { 1,0,1,0,0};
+
+  if(!VerifyIndexes(tm, e, 0)) { return false; }
+
+  for (int idx=0; idx<128; idx++) {
+    if (pm[idx] != ptr[idx]) {
+      std::cout << "error: pm[" << idx << "]:" << pm[idx] << " =/= " << " ptr[" << idx << "]:" << ptr[idx] << std::endl;
+      return false;
+    }
+  }
+  std::cout << std::endl;
+
+  // transition to play
+  tm.HandleDownEvent(0);
+  tm.HandleDoubleDownEvent(0); 
+  result = tm.tracks.at(0).IsTrackOff();
+  if (!result) {
+    std::cout << "error: track 0 not off" << std::endl;
+    return result;
+  }
+
+  free(ptr);
+  free(pm);
+  return true;
 }
 
 int main() {
@@ -1132,6 +1211,11 @@ int main() {
   }
 
   result = Test_TrackPlaybackNewTrackStartsRecordingThenRepeatsIndexes(tm);
+  if (!result) {
+    std::cout << "---> TEST FAILED" << std::endl;
+  }
+
+  result = Test_RecordingSingleTrackWithData(tm);
   if (!result) {
     std::cout << "---> TEST FAILED" << std::endl;
   }
