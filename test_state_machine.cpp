@@ -1107,8 +1107,8 @@ bool Test_RecordingSingleTrackWithData(TrackManager &tm) {
   }
 
   // Input
-  int *ptr =(int *)calloc(1024, 1);
-  if (!ptr) { std::cout << "Calloc failed" << std::endl; return false; }
+  int *ptr =(int *)calloc(1, 1024);
+  if (!ptr) { std::cout << "input buf Calloc failed" << std::endl; return false; }
   uint8_t val = 1; 
   for (int idx=0; idx<1024; idx++) {
     if (idx > 0 && (idx % 128 == 0)) { val++; }
@@ -1116,7 +1116,9 @@ bool Test_RecordingSingleTrackWithData(TrackManager &tm) {
   }
 
   // Output
-  int *pm =(int *)calloc(1024,1);
+  int *pm =(int *)calloc(1, 1024);
+  if (!pm) { std::cout << "output buff Calloc failed" << std::endl; return false; }
+
 
   // Start 0 recording
   std::cout << "    Record track 0 **" << std::endl;
