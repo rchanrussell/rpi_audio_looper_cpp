@@ -10,8 +10,8 @@
 static TrackManager tm;
 
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
-  for (int i = 0; i < expected.samples.size(); i++) {
-    if (expected.samples[i] != test.samples[i]) return false;
+  for (int i = 0; i < expected.samples_.size(); i++) {
+    if (expected.samples_[i] != test.samples_[i]) return false;
   }
   return true;
 }

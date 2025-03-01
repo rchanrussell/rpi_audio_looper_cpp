@@ -15,19 +15,18 @@ class Off : public TrackManagerState {
   Off() {};
   Off(const Off& other);
   Off& operator=(const Off& other);
-  TrackState state_id;
 
   public:
   // State Specific Methods
-  void enter(TrackManager &tm, uint32_t track_number);
-  void exit(TrackManager &tm, uint32_t track_number);
-  void active(TrackManager &tm, uint32_t track_number);
+  void Enter(TrackManager &tm, uint32_t track_number);
+  void Exit(TrackManager &tm, uint32_t track_number);
+  void Active(TrackManager &tm, uint32_t track_number);
 
   // Event Specific Methods
-  void handle_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_double_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_short_pulse_event(TrackManager &tm, uint32_t track_number);
-  void handle_long_pulse_event(TrackManager &tm, uint32_t track_number);
+  void DownEvent(TrackManager &tm, uint32_t track_number);
+  void DoubleDownEvent(TrackManager &tm, uint32_t track_number);
+  void ShortPulseEvent(TrackManager &tm, uint32_t track_number);
+  void LongPulseEvent(TrackManager &tm, uint32_t track_number);
 
   static Off& getInstance();
 };
@@ -41,15 +40,15 @@ class Record : public TrackManagerState {
 
   public:
   // State Specific Methods
-  void enter(TrackManager &tm, uint32_t track_number);
-  void exit(TrackManager &tm, uint32_t track_number);
-  void active(TrackManager &tm, uint32_t track_number);
+  void Enter(TrackManager &tm, uint32_t track_number);
+  void Exit(TrackManager &tm, uint32_t track_number);
+  void Active(TrackManager &tm, uint32_t track_number);
 
   // Event Specific Methods
-  void handle_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_double_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_short_pulse_event(TrackManager &tm, uint32_t track_number);
-  void handle_long_pulse_event(TrackManager &tm, uint32_t track_number);
+  void DownEvent(TrackManager &tm, uint32_t track_number);
+  void DoubleDownEvent(TrackManager &tm, uint32_t track_number);
+  void ShortPulseEvent(TrackManager &tm, uint32_t track_number);
+  void LongPulseEvent(TrackManager &tm, uint32_t track_number);
 
   static Record& getInstance();
 };
@@ -63,15 +62,15 @@ class Overdub : public TrackManagerState {
 
   public:
   // State Specific Methods
-  void enter(TrackManager &tm, uint32_t track_number);
-  void exit(TrackManager &tm, uint32_t track_number);
-  void active(TrackManager &tm, uint32_t track_number);
+  void Enter(TrackManager &tm, uint32_t track_number);
+  void Exit(TrackManager &tm, uint32_t track_number);
+  void Active(TrackManager &tm, uint32_t track_number);
 
   // Event Specific Methods
-  void handle_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_double_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_short_pulse_event(TrackManager &tm, uint32_t track_number);
-  void handle_long_pulse_event(TrackManager &tm, uint32_t track_number);
+  void DownEvent(TrackManager &tm, uint32_t track_number);
+  void DoubleDownEvent(TrackManager &tm, uint32_t track_number);
+  void ShortPulseEvent(TrackManager &tm, uint32_t track_number);
+  void LongPulseEvent(TrackManager &tm, uint32_t track_number);
 
   static Overdub& getInstance();
 };
@@ -85,15 +84,15 @@ class Play : public TrackManagerState {
 
   public:
   // State Specific Methods
-  void enter(TrackManager &tm, uint32_t track_number);
-  void exit(TrackManager &tm, uint32_t track_number);
-  void active(TrackManager &tm, uint32_t track_number);
+  void Enter(TrackManager &tm, uint32_t track_number);
+  void Exit(TrackManager &tm, uint32_t track_number);
+  void Active(TrackManager &tm, uint32_t track_number);
 
   // Event Specific Methods
-  void handle_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_double_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_short_pulse_event(TrackManager &tm, uint32_t track_number);
-  void handle_long_pulse_event(TrackManager &tm, uint32_t track_number);
+  void DownEvent(TrackManager &tm, uint32_t track_number);
+  void DoubleDownEvent(TrackManager &tm, uint32_t track_number);
+  void ShortPulseEvent(TrackManager &tm, uint32_t track_number);
+  void LongPulseEvent(TrackManager &tm, uint32_t track_number);
 
   static Play& getInstance();
 };
@@ -107,15 +106,15 @@ class Repeat : public TrackManagerState {
 
   public:
   // State Specific Methods
-  void enter(TrackManager &tm, uint32_t track_number);
-  void exit(TrackManager &tm, uint32_t track_number);
-  void active(TrackManager &tm, uint32_t track_number);
+  void Enter(TrackManager &tm, uint32_t track_number);
+  void Exit(TrackManager &tm, uint32_t track_number);
+  void Active(TrackManager &tm, uint32_t track_number);
 
   // Event Specific Methods
-  void handle_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_double_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_short_pulse_event(TrackManager &tm, uint32_t track_number);
-  void handle_long_pulse_event(TrackManager &tm, uint32_t track_number);
+  void DownEvent(TrackManager &tm, uint32_t track_number);
+  void DoubleDownEvent(TrackManager &tm, uint32_t track_number);
+  void ShortPulseEvent(TrackManager &tm, uint32_t track_number);
+  void LongPulseEvent(TrackManager &tm, uint32_t track_number);
 
   static Repeat& getInstance();
 };
@@ -129,15 +128,15 @@ class Mute : public TrackManagerState {
 
   public:
   // State Specific Methods
-  void enter(TrackManager &tm, uint32_t track_number);
-  void exit(TrackManager &tm, uint32_t track_number);
-  void active(TrackManager &tm, uint32_t track_number);
+  void Enter(TrackManager &tm, uint32_t track_number);
+  void Exit(TrackManager &tm, uint32_t track_number);
+  void Active(TrackManager &tm, uint32_t track_number);
 
   // Event Specific Methods
-  void handle_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_double_down_event(TrackManager &tm, uint32_t track_number);
-  void handle_short_pulse_event(TrackManager &tm, uint32_t track_number);
-  void handle_long_pulse_event(TrackManager &tm, uint32_t track_number);
+  void DownEvent(TrackManager &tm, uint32_t track_number);
+  void DoubleDownEvent(TrackManager &tm, uint32_t track_number);
+  void ShortPulseEvent(TrackManager &tm, uint32_t track_number);
+  void LongPulseEvent(TrackManager &tm, uint32_t track_number);
 
   static Mute& getInstance();
 };

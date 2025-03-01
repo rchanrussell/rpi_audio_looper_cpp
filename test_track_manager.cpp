@@ -10,8 +10,8 @@ static TrackManager tm;
 #define NUM_BLOCKS_OVERDUB 7
 
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
-  for (int i = 0; i < expected.samples.size(); i++) {
-    if (expected.samples[i] != test.samples[i]) return false;
+  for (int i = 0; i < expected.samples_.size(); i++) {
+    if (expected.samples_[i] != test.samples_[i]) return false;
   }
   return true;
 }
@@ -27,8 +27,8 @@ void Test_Record_SingleTrack(TrackManager &tm) {
   uint32_t num_blocks = NUM_BLOCKS_RECORD + 1;
   uint32_t track_number = 0;
 
-  for (uint32_t index = 0; index < test_data_incr.samples.size(); index++) {
-    test_data_incr.samples[index] = value++;
+  for (uint32_t index = 0; index < test_data_incr.samples_.size(); index++) {
+    test_data_incr.samples_[index] = value++;
   }
 
   // Starting from off, test event handler for Recording
@@ -38,7 +38,8 @@ void Test_Record_SingleTrack(TrackManager &tm) {
 
   std::cout << "   Set track " << track_number << " to recording and copy data block" << std::endl;
   tm.HandleStateChange_Recording(track_number, test_data_1p1);
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
+  tm.IndexUpdateAllStatesNoChange();
+  tm.IndexUpdateRecordNoChange(track_number);
 
   gettimeofday(&t2, NULL);
   std::cout << "   start recording and update indexes time: " << t2.tv_sec - t1.tv_sec << "s, " << t2.tv_usec - t1.tv_usec << "us" << std::endl;
@@ -60,7 +61,8 @@ void Test_Record_SingleTrack(TrackManager &tm) {
   std::cout << "   insert more data blocks " << std::endl;
   for(data_block_number = 1; data_block_number < num_blocks; data_block_number++) {
     tm.HandleStateChange_Recording(track_number, test_data_incr);
-    tm.HandleIndexUpdate_AlreadyInState_AllStates();
+    tm.IndexUpdateAllStatesNoChange();
+    tm.IndexUpdateRecordNoChange(track_number);
   }
 
   // -> verify manually and state - get data via mixdown - currentIndex should be 5
@@ -85,7 +87,7 @@ void Test_Record_SingleTrack(TrackManager &tm) {
       tm.mixdown.PrintBlock(); 
 #endif
     }
-    tm.HandleIndexUpdate_AlreadyInState_AllStates();
+    tm.IndexUpdateAllStatesNoChange();
   }
 }
 
@@ -102,8 +104,8 @@ void Test_Overdub_SingleTrack(TrackManager &tm) {
   uint32_t num_blocks = NUM_BLOCKS_OVERDUB + 1;
   uint32_t track_number = 0;
 
-  for (uint32_t index = 0; index < test_data_incr.samples.size(); index++) {
-    test_data_incr.samples[index] = value++;
+  for (uint32_t index = 0; index < test_data_incr.samples_.size(); index++) {
+    test_data_incr.samples_[index] = value++;
   }
 
   // Move indexes to the start, 0
@@ -127,7 +129,8 @@ void Test_Overdub_SingleTrack(TrackManager &tm) {
   gettimeofday(&t1, NULL);
 
   tm.HandleStateChange_Overdubbing(track_number, test_data_incr);
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
+  tm.IndexUpdateAllStatesNoChange();
+  tm.IndexUpdateOverdubExit(track_number);
 
   gettimeofday(&t2, NULL);
   std::cout << "   time for overdubbing and updating indexes " << t2.tv_sec - t1.tv_sec << "s, " << t2.tv_usec - t1.tv_usec << "us" << std::endl;
@@ -166,7 +169,8 @@ void Test_Overdub_SingleTrack(TrackManager &tm) {
   std::cout << "    insert 7 blocks of data, 1p1" << std::endl;
   for(data_block_number = 1; data_block_number < num_blocks; data_block_number++) {
     tm.HandleStateChange_Overdubbing(track_number, test_data_1p1);
-    tm.HandleIndexUpdate_AlreadyInState_AllStates();
+    tm.IndexUpdateAllStatesNoChange();
+    tm.IndexUpdateOverdubExit(track_number);
   }
 
   // Set track to Playback because we want the OnExitState to be called
@@ -212,8 +216,8 @@ void Test_Playback_SingleTrack(TrackManager &tm) {
   DataBlock test_result(1.1f);
   DataBlock test_zero(0.0f);
 
-  for (uint32_t index = 0; index < test_result.samples.size(); index++) {
-    test_result.samples[index] += value++;
+  for (uint32_t index = 0; index < test_result.samples_.size(); index++) {
+    test_result.samples_[index] += value++;
   }
 
   // zero out first two blocks of data and blocks after data_block_number_end
@@ -247,7 +251,8 @@ void Test_Playback_SingleTrack(TrackManager &tm) {
     if (!result) {
       std::cout << "error: block " << block_count << " no match!" << std::endl;
     }
-    tm.HandleIndexUpdate_AlreadyInState_AllStates();
+    tm.IndexUpdateAllStatesNoChange();
+    tm.IndexUpdatePlaybackExit(track_number);
   }
 }
 
@@ -260,8 +265,8 @@ void Test_PlaybackRepeat_SingleTrack(TrackManager &tm) {
   uint32_t track_number = 0;
   DataBlock test_result(1.1f);
 
-  for (uint32_t index = 0; index < test_result.samples.size(); index++) {
-    test_result.samples[index] += value++;
+  for (uint32_t index = 0; index < test_result.samples_.size(); index++) {
+    test_result.samples_[index] += value++;
   }
 
   // zero out first two blocks of data and blocks after data_block_number_end
@@ -287,7 +292,8 @@ void Test_PlaybackRepeat_SingleTrack(TrackManager &tm) {
     if (!result) {
       std::cout << "error: block " << block_count << " no match" << std::endl;
     }
-    tm.HandleIndexUpdate_AlreadyInState_AllStates();
+    tm.IndexUpdateAllStatesNoChange();
+    tm.IndexUpdateRepeatExit(track_number);
   }
 }
 
@@ -302,8 +308,8 @@ void Test_Playback_DualTrack_SecondTrackNoData(TrackManager &tm) {
   DataBlock test_zero(0.0f);
   DataBlock test_result(1.1f);
 
-  for (uint32_t index = 0; index < test_result.samples.size(); index++) {
-    test_result.samples[index] += value++;
+  for (uint32_t index = 0; index < test_result.samples_.size(); index++) {
+    test_result.samples_[index] += value++;
   }
 
 
@@ -314,7 +320,8 @@ void Test_Playback_DualTrack_SecondTrackNoData(TrackManager &tm) {
 
   // Set track 0 to playback - mixdown relies on master_current
   tm.HandleStateChange_Playback(track_number);
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
+  tm.IndexUpdateAllStatesNoChange();
+  tm.IndexUpdatePlaybackExit(track_number);
   tm.HandleStateChange_Playback(track_number_test);
 
   std::cout << "    entering loop for blocks 1+ " << std::endl;
@@ -347,7 +354,8 @@ void Test_Playback_DualTrack_SecondTrackNoData(TrackManager &tm) {
       tm.mixdown.PrintBlock();
 #endif
     }
-    tm.HandleIndexUpdate_AlreadyInState_AllStates();
+    tm.IndexUpdateAllStatesNoChange();
+    tm.IndexUpdatePlaybackExit(track_number_test);
   }
 }
 
@@ -434,7 +442,8 @@ void Test_RecordOnDiffTrack_NoPlaybackFirst(TrackManager &tm) {
   gettimeofday(&t1, NULL);
 
   tm.HandleStateChange_Recording(track_number, test_data_1p1);
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
+  tm.IndexUpdateAllStatesNoChange();
+  tm.IndexUpdateRecordNoChange(track_number);
 
   gettimeofday(&t2, NULL);
   std::cout << "   record and index update time " << t2.tv_sec - t1.tv_sec << "s, " << t2.tv_usec - t1.tv_usec << "us" << std::endl;
@@ -456,7 +465,8 @@ void Test_RecordOnDiffTrack_NoPlaybackFirst(TrackManager &tm) {
   gettimeofday(&t1, NULL);
 
   tm.HandleStateChange_Recording(track_number_1, test_data_1p1);
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
+  tm.IndexUpdateAllStatesNoChange();
+  tm.IndexUpdateRecordNoChange(track_number_1);
 
   gettimeofday(&t2, NULL);
   std::cout << "   recording and index update time " << t2.tv_sec - t1.tv_sec << "s, " << t2.tv_usec - t1.tv_usec << "us" << std::endl;
@@ -494,7 +504,8 @@ void Test_RecordOnDiffTrack_NoPlaybackFirst(TrackManager &tm) {
   gettimeofday(&t1, NULL);
 
   tm.HandleStateChange_Recording(track_number, test_data_1p1);
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
+  tm.IndexUpdateAllStatesNoChange();
+  tm.IndexUpdateRecordNoChange(track_number);
 
   gettimeofday(&t2, NULL);
   std::cout << "   recording and indexes time " << t2.tv_sec - t1.tv_sec << "s, " << t2.tv_usec - t1.tv_usec << "us" << std::endl;
@@ -516,7 +527,8 @@ void Test_RecordOnDiffTrack_NoPlaybackFirst(TrackManager &tm) {
   gettimeofday(&t1, NULL);
 
   tm.HandleStateChange_Recording(track_number_1, test_data_1p1);
-  tm.HandleIndexUpdate_AlreadyInState_AllStates();
+  tm.IndexUpdateAllStatesNoChange();
+  tm.IndexUpdateRecordNoChange(track_number_1);
 
   gettimeofday(&t2, NULL);
   std::cout << "   recording and index time " << t2.tv_sec - t1.tv_sec << "s, " << t2.tv_usec - t1.tv_usec << "us" << std::endl;

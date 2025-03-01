@@ -4,13 +4,14 @@
 #include <array>
 #include <iostream>
 #include <iterator>
+
 #include "util.h"
 
 class DataBlock {
   public:
   // Member Variables
-  //float data[SAMPLES_PER_BLOCK];
-  std::array<float, SAMPLES_PER_BLOCK> samples;
+  std::array<float, SAMPLES_PER_BLOCK> samples_;
+
   // Member Functions
   DataBlock();
   DataBlock(float init_val);

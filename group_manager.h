@@ -4,8 +4,10 @@
 #include <array>
 #include <iostream>
 #include <iterator>
-#include "track_manager.h"
+
 #include "util.h"
+#include "track_manager.h"
+#include "group_manager_state.h"
 
 /*
 enum SystemEvents
@@ -15,6 +17,8 @@ enum SystemEvents
   SYSTEM_EVENT_SET_ACTIVE_GROUP,          // Sets the currently active group - group # required
 };
 */
+
+class GroupManagerState;
 
 // Tracks can be on multiple groups - useful for repeating rhythmic pattern
 
@@ -29,11 +33,31 @@ class GroupManager {
   std::array<uint32_t, MAX_GROUP_COUNT> group_master_end_index;
   uint8_t active_group;
 
+  GroupManagerState* current_state;
+
   public:
   // Member variables
 
   // Member Functions
   GroupManager();
+
+  // State Machine Section
+  void SetState(GroupManagerState &new_state, TrackManager &tm, uint32_t group_number, uint32_t track_number);
+  inline GroupManagerState& GetCurrentState() const { return *current_state; }
+  // Adding tracks to active group
+  void StateProcess(TrackManager &tm, uint32_t group_number, uint32_t track_number);
+
+  //
+  bool IsStateNotActive();
+  bool IsStateActive();
+  bool IsStateAddTrack();
+  bool IsStateRemoveAllTracks();
+
+  // Call the current state's versions
+  void HandleDownEvent(TrackManager &tm, uint32_t group_number, uint32_t track_number);
+  void HandleDoubleDownEvent(TrackManager &tm, uint32_t group_number, uint32_t track_number);
+  void HandleShortPulseEvent(TrackManager &tm, uint32_t group_number, uint32_t track_number);
+  void HandleLongPulseEvent(TrackManager &tm, uint32_t group_number, uint32_t track_number);
 
   // Local storage only - meant for configuration
   void AddTrackToGroup(uint32_t track_number, uint8_t group_number);

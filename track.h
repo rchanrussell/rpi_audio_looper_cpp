@@ -4,15 +4,16 @@
 #include <array>
 #include <iostream>
 #include <iterator>
+
 #include "data_block.h"
 
-enum TrackState {
-  TRACK_STATE_OFF,                // Empty track or available for recording
-  TRACK_STATE_OVERDUB,            // In overdub mode, may/may not update start/end indicies
-  TRACK_STATE_PLAYBACK,           // In playback mode
-  TRACK_STATE_PLAYBACK_REPEAT,    // In playback mode with repeat
-  TRACK_STATE_RECORDING,          // In recording mode - overwrites any previous recording info
-  TRACK_STATE_MUTE                // In mute state, don't mixdown
+enum class TrackState {
+  kOff = 0,   // Empty track or available for recording
+  kOverdub,   // In overdub mode, may/may not update start/end indicies
+  kPlayback,  // In playback mode
+  kRepeat,    // In playback mode with repeat
+  kRecord,    // In recording mode - overwrites any previous recording info
+  kMuted      // In mute state, don't mixdown
 
 };
 
@@ -25,19 +26,18 @@ enum TrackState {
 
 class Track {
   // Indexes are per block of 128 samples, not per sample
-  uint32_t start_index;
-  uint32_t end_index;
-  uint32_t current_index;
-  bool is_track_silent;
-  TrackState current_state;
-  TrackState previous_state;
+  uint32_t start_index_;
+  uint32_t end_index_;
+  uint32_t current_index_;
+  bool is_track_silent_;
+  TrackState current_state_;
+  TrackState previous_state_;
+  std::array<DataBlock, MAX_BLOCK_COUNT> frame_blocks;
+
   void SetTrackMembersToDefault();
   void RestoreUsingSetState();
 
   public:
-  // Member Variables - while private provides encapsulation, I don't want copying
-  // so where possible, access the data directly when reading
-  std::array<DataBlock, MAX_BLOCK_COUNT> frame_blocks;
   // Member Functions
   Track();
   Track(float init_val);

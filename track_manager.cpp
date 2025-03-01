@@ -8,85 +8,67 @@ TrackManager::TrackManager() {
   current_state = &Off::getInstance();
 }
 
+// Handle Index
+uint32_t TrackManager::DetermineIndex(uint32_t track) {
+    return tracks.at(track).IsTrackInPlaybackRepeat() ?
+           tracks.at(track).GetCurrentIndex() : master_current_index_;
+}
+
+void TrackManager::SilentPlaybackTrack(uint32_t track, uint32_t index) {
+  uint32_t track_start_index = 0;
+  uint32_t track_end_index = 0;
+
+  if (tracks.at(track).IsTrackInPlayback()) {
+    track_start_index = tracks.at(track).GetStartIndex();
+    track_end_index = tracks.at(track).GetEndIndex();
+
+    if (index < track_start_index || index > track_end_index || track_start_index == track_end_index) {
+      tracks.at(track).SetTrackSilent(true);
+    } else {
+      tracks.at(track).SetTrackSilent(false);
+    }
+  }
+}
+
 // Perform Mixdown
 // Pass empty_block in place of tracks off/muted/in other group
 void TrackManager::PerformMixdown() {
   uint32_t index_one = 0;
   uint32_t index_two = 0;
-  uint32_t track_start_index = 0;
-  uint32_t track_end_index = 0;
+
   // Clear mixdown as MixBlocks does not do this and shouldn't for simplicity
   mixdown.SetData(empty_block);
-#ifdef DTEST_TM_VERBOSE
-  std::cout << std::endl;
-#endif
-  // if repeat, use track's own current_index, otherwise use master_current_index
+
   for (int t = 0; t < tracks.size(); t+=2) {
     // Handle index
-    index_one = tracks.at(t).IsTrackInPlaybackRepeat() ?
-                tracks.at(t).GetCurrentIndex() : master_current_index;
-    index_two = tracks.at(t + 1).IsTrackInPlaybackRepeat() ?
-                tracks.at(t + 1).GetCurrentIndex() : master_current_index;
-    // tracks in playback when master_current_index is outside range
+    index_one = DetermineIndex(t);
+    index_two = DetermineIndex(t + 1);
+
+    // tracks in playback when master_current_index_ is outside range
     // need to be set to silent
-    if (tracks.at(t).IsTrackInPlayback()) {
-      track_start_index = tracks.at(t).GetStartIndex();
-      track_end_index = tracks.at(t).GetEndIndex();
-      if (index_one < track_start_index || index_one > track_end_index || track_start_index == track_end_index) {
-        tracks.at(t).SetTrackSilent(true);
-      } else {
-        tracks.at(t).SetTrackSilent(false);
-      }
-    }
+    SilentPlaybackTrack(t, index_one);
+    SilentPlaybackTrack(t + 1, index_two);
 
-    if (tracks.at(t + 1).IsTrackInPlayback()) {
-      track_start_index = tracks.at(t + 1).GetStartIndex();
-      track_end_index = tracks.at(t + 1).GetEndIndex();
-      if (index_two < track_start_index || index_two > track_end_index || track_start_index == track_end_index) {
-        tracks.at(t + 1).SetTrackSilent(true);
-      } else {
-        tracks.at(t + 1).SetTrackSilent(false);
-      }
-    }
-
-#ifdef DTEST_TM_VERBOSE
-    std::cout << "Track Manager: Mixing block " << index_one << " track " << t << " and block " << index_two << " track " << t + 1 << std::endl;
-#endif
     // Handle block mixdown based upon state
     // TODO - non-active group needs to be in here too
     if (tracks.at(t).IsTrackSilent() && tracks.at(t + 1).IsTrackSilent()) {
-#ifdef DTEST_TM_VERBOSE
-      std::cout << "Track Manager: PerformMixdown: Silent - Silent" << std::endl;
-#endif
       MixBlocks(empty_block,
                 empty_block,
                 mixdown);
     } else if (tracks.at(t).IsTrackSilent() && !tracks.at(t + 1).IsTrackSilent()) {
-#ifdef DTEST_TM_VERBOSE
-      std::cout << "Track Manager: PerformMixdown: Silent - Data" << std::endl;
-#endif
       MixBlocks(empty_block,
                 tracks.at(t + 1).GetBlockData(index_two),
                 mixdown);
     } else if (!tracks.at(t).IsTrackSilent() && tracks.at(t + 1).IsTrackSilent()) {
-#ifdef DTEST_TM_VERBOSE
-      std::cout << "Track Manager: PerformMixdown: Data - Silent" << std::endl;
-#endif
       MixBlocks(tracks.at(t).GetBlockData(index_one),
                 empty_block,
                 mixdown);
     } else {
-#ifdef DTEST_TM_VERBOSE
-      std::cout << "Track Manager: PerformMixdown: Data - Data" << std::endl;
-#endif
       MixBlocks(tracks.at(t).GetBlockData(index_one),
                 tracks.at(t + 1).GetBlockData(index_two),
                 mixdown);
     }
   }
-#ifdef DTEST_TM_VERBOSE
-  std::cout << std::endl;
-#endif
 }
 
 /*
@@ -94,24 +76,24 @@ void TrackManager::PerformMixdown() {
  */
 
 void TrackManager::SetMasterCurrentIndex(uint32_t current) {
-  master_current_index = current;
+  master_current_index_ = current;
 }
 void TrackManager::SetMasterEndIndex(uint32_t end) {
-  master_end_index = end;
+  master_end_index_ = end;
 }
 uint32_t TrackManager::GetMasterCurrentIndex() {
-  return master_current_index;
+  return master_current_index_;
 }
 uint32_t TrackManager::GetMasterEndIndex() {
-  return master_end_index;
+  return master_end_index_;
 }
 
-// If master_current_index reaches max available space, reset it and change state if
+// If master_current_index_ reaches max available space, reset it and change state if
 // required
-void TrackManager::HandleIndexUpdate_ReachedEndOfAvailableSpace(uint32_t track_number) {
+void TrackManager::IndexUpdateReachedEndOfAvailableSpace(uint32_t track_number) {
   // master always starts at 0
-  master_current_index = 0;
-  tracks.at(track_number).SetCurrentIndex(master_current_index);
+  master_current_index_ = 0;
+  tracks.at(track_number).SetCurrentIndex(master_current_index_);
 }
 
 /*
@@ -122,40 +104,40 @@ void TrackManager::HandleIndexUpdate_ReachedEndOfAvailableSpace(uint32_t track_n
 // OnEnterState (from another state)
 // -> Set CurrentIndex to MasterCurrentIndex
 // -> Set StartIndex to CurrentIndex
-void TrackManager::HandleIndexUpdate_Recording_OnEnterState(uint32_t track_number) {
-  tracks.at(track_number).SetCurrentIndex(master_current_index);
-  tracks.at(track_number).SetStartIndex(master_current_index);
+void TrackManager::IndexUpdateRecordEnter(uint32_t track_number) {
+  tracks.at(track_number).SetCurrentIndex(master_current_index_);
+  tracks.at(track_number).SetStartIndex(master_current_index_);
 }
 
 // Handle Index Update - Overdubbing
 // OnEnterState (from another state)
 // -> Set CurrentIndex to MasterCurrentIndex
 // -> If CurrentIndex < StartIndex, Set StartIndex to CurrentIndex
-void TrackManager::HandleIndexUpdate_Overdubbing_OnEnterState(uint32_t track_number) {
-  tracks.at(track_number).SetCurrentIndex(master_current_index);
-  if (master_current_index < tracks.at(track_number).GetStartIndex()) {
-    tracks.at(track_number).SetStartIndex(master_current_index);
+void TrackManager::IndexUpdateOverdubEnter(uint32_t track_number) {
+  tracks.at(track_number).SetCurrentIndex(master_current_index_);
+  if (master_current_index_ < tracks.at(track_number).GetStartIndex()) {
+    tracks.at(track_number).SetStartIndex(master_current_index_);
   }
 }
  
 // Handle Index Update - Playback
 // OnEnterState (from another state)
 // -> Set CurrentIndex to MasterCurrentIndex
-void TrackManager::HandleIndexUpdate_Playback_OnEnterState(uint32_t track_number) {
+void TrackManager::IndexUpdatePlaybackEnter(uint32_t track_number) {
   // If entering play and MCI == MEI, set MCI to 0, IE restart from beginning
-  if (master_current_index >= master_end_index) {
-    master_current_index = 0;
+  if (master_current_index_ >= master_end_index_) {
+    master_current_index_ = 0;
   }
-  tracks.at(track_number).SetCurrentIndex(master_current_index);
+  tracks.at(track_number).SetCurrentIndex(master_current_index_);
 }
 
 // Handle Index Update - PlaybackRepeat
 // OnEnterState (from another state)
 // -> Set CurrentIndex to StartIndex
-void TrackManager::HandleIndexUpdate_PlaybackRepeat_OnEnterState(uint32_t track_number) {
+void TrackManager::IndexUpdateRepeatEnter(uint32_t track_number) {
   // If entering repeat and MCI == MEI, set MCI to 0, IE restart from beginning
-  if (master_current_index >= master_end_index) {
-    master_current_index = 0;
+  if (master_current_index_ >= master_end_index_) {
+    master_current_index_ = 0;
   }
   tracks.at(track_number).SetCurrentIndex(tracks.at(track_number).GetStartIndex());
 }
@@ -166,69 +148,69 @@ void TrackManager::HandleIndexUpdate_PlaybackRepeat_OnEnterState(uint32_t track_
 
 // Re-enterState (from Recording state)
 // -> Increment CurrentIndex
-void TrackManager::HandleIndexUpdate_Recording_AlreadyInState(uint32_t track_number) {
+void TrackManager::IndexUpdateRecordNoChange(uint32_t track_number) {
   tracks.at(track_number).IncrementCurrentIndex();
-  if (!master_current_index_updated) {
-    master_current_index++;
-    master_current_index_updated = true;
+  if (!master_current_index_updated_) {
+    master_current_index_++;
+    master_current_index_updated_ = true;
   }
   // If we're at the end of available data space for the master track:
   // Change from Recording to Playback, reset indexes
-  if (master_current_index == MAX_BLOCK_COUNT) {
-    HandleIndexUpdate_ReachedEndOfAvailableSpace(track_number);
+  if (master_current_index_ == MAX_BLOCK_COUNT) {
+    IndexUpdateReachedEndOfAvailableSpace(track_number);
     tracks.at(track_number).SetTrackToInPlayback();
   }
 }
  
 // Re-enterState (from Overdubbing state)
 // -> Increment CurrentIndex
-void TrackManager::HandleIndexUpdate_Overdubbing_AlreadyInState(uint32_t track_number) {
+void TrackManager::IndexUpdateOverdubNoChange(uint32_t track_number) {
   tracks.at(track_number).IncrementCurrentIndex();
-  if (!master_current_index_updated) {
-    master_current_index++;
-    master_current_index_updated = true;
+  if (!master_current_index_updated_) {
+    master_current_index_++;
+    master_current_index_updated_ = true;
   }
   // If we're at the end of available data space for the master track:
   // Change from Overdubbing to Playback, reset indexes
-  if (master_current_index == MAX_BLOCK_COUNT) {
-    HandleIndexUpdate_ReachedEndOfAvailableSpace(track_number);
+  if (master_current_index_ == MAX_BLOCK_COUNT) {
+    IndexUpdateReachedEndOfAvailableSpace(track_number);
     tracks.at(track_number).SetTrackToInPlayback();
   }
 }
 
 // Re-enterState (from Playback state)
 // -> Increment CurrentIndex
-void TrackManager::HandleIndexUpdate_Playback_AlreadyInState(uint32_t track_number) {
+void TrackManager::IndexUpdatePlaybackNoChange(uint32_t track_number) {
   tracks.at(track_number).IncrementCurrentIndex();
-  if (!master_current_index_updated) {
-    master_current_index++;
-    master_current_index_updated = true;
+  if (!master_current_index_updated_) {
+    master_current_index_++;
+    master_current_index_updated_ = true;
   }
   // If we're at the end of available data space for the master track:
-  if (master_current_index == MAX_BLOCK_COUNT) {
-    HandleIndexUpdate_ReachedEndOfAvailableSpace(track_number);
+  if (master_current_index_ == MAX_BLOCK_COUNT) {
+    IndexUpdateReachedEndOfAvailableSpace(track_number);
   }
   // ensure not recording - which will be current_state if we are
   // this track may be in playback but another could be rec/ovd which means
   // it will be increasing master end index
-  if (tracks.at(last_track_number).IsTrackOverdubbing() ||
-      tracks.at(last_track_number).IsTrackInRecord()) {
+  if (tracks.at(last_track_number_).IsTrackOverdubbing() ||
+      tracks.at(last_track_number_).IsTrackInRecord()) {
     return;
   }
-  if (master_current_index > master_end_index) {
-    master_current_index = 0;
-    tracks.at(track_number).SetCurrentIndex(master_current_index);
+  if (master_current_index_ > master_end_index_) {
+    master_current_index_ = 0;
+    tracks.at(track_number).SetCurrentIndex(master_current_index_);
   }
 }
 
 // Re-enterState (from PlaybackRepeat state)
 // -> Increment CurrentIndex
 // -> If CurrentIndex > EndIndex, set CurrentIndex to StartIndex
-void TrackManager::HandleIndexUpdate_PlaybackRepeat_AlreadyInState(uint32_t track_number) {
+void TrackManager::IndexUpdateRepeatNoChange(uint32_t track_number) {
   tracks.at(track_number).IncrementCurrentIndex();
-  if (!master_current_index_updated) {
-    master_current_index++;
-    master_current_index_updated = true;
+  if (!master_current_index_updated_) {
+    master_current_index_++;
+    master_current_index_updated_ = true;
   }
 
   if (tracks.at(track_number).GetCurrentIndex() > tracks.at(track_number).GetEndIndex()) {
@@ -237,22 +219,22 @@ void TrackManager::HandleIndexUpdate_PlaybackRepeat_AlreadyInState(uint32_t trac
 
   // If we're at the end of available data space for the master track:
   // Don't call generic handler as we don't want to update the track's current index
-  // while in Repeat because we're not in sync with master_current_index, we stay within
+  // while in Repeat because we're not in sync with master_current_index_, we stay within
   // the track's own range
-  if (master_current_index == MAX_BLOCK_COUNT) {
+  if (master_current_index_ == MAX_BLOCK_COUNT) {
     // master always starts at 0
-    master_current_index = 0;
+    master_current_index_ = 0;
   }
   // ensure not recording - which will be current_state if we are
   // this track may be in playback but another could be rec/ovd which means
   // it will be increasing master end index
-  if (tracks.at(last_track_number).IsTrackOverdubbing() ||
-      tracks.at(last_track_number).IsTrackInRecord()) {
+  if (tracks.at(last_track_number_).IsTrackOverdubbing() ||
+      tracks.at(last_track_number_).IsTrackInRecord()) {
     return;
   }
-  if (master_current_index > master_end_index) {
-    master_current_index = 0;
-    tracks.at(track_number).SetCurrentIndex(master_current_index);
+  if (master_current_index_ > master_end_index_) {
+    master_current_index_ = 0;
+    tracks.at(track_number).SetCurrentIndex(master_current_index_);
   }
 }
 
@@ -263,35 +245,35 @@ void TrackManager::HandleIndexUpdate_PlaybackRepeat_AlreadyInState(uint32_t trac
 // OnExitState (leaving to another state)
 // -> Set EndIndex to CurrentIndex
 // -> If CurrentIndex > MasterEndIndex, Set MasterEndIndex to CurrentIndex
-void TrackManager::HandleIndexUpdate_Recording_OnExitState(uint32_t track_number) {
-  uint32_t current_index = master_current_index;
+void TrackManager::IndexUpdateRecordExit(uint32_t track_number) {
+  uint32_t current_index = master_current_index_;
   tracks.at(track_number).SetEndIndex(current_index);
-  if (current_index > master_end_index) {
-    master_end_index = current_index;
+  if (current_index > master_end_index_) {
+    master_end_index_ = current_index;
   }
 }
 
 // OnExitState (leaving to another state)
 // -> If CurrentIndex > EndIndex, Set EndIndex to CurrentIndex
 // -> If CurrentIndex > MasterEndIndex, Set MasterEndIndex to CurrentIndex
-void TrackManager::HandleIndexUpdate_Overdubbing_OnExitState(uint32_t track_number) {
-  uint32_t current_index = master_current_index;
+void TrackManager::IndexUpdateOverdubExit(uint32_t track_number) {
+  uint32_t current_index = master_current_index_;
   if (current_index > tracks.at(track_number).GetEndIndex()) {
     tracks.at(track_number).SetEndIndex(current_index);
   }
-  if (current_index > master_end_index) {
-    master_end_index = current_index;
+  if (current_index > master_end_index_) {
+    master_end_index_ = current_index;
   }
 }
 
 // OnExitState (leaving to another state)
 // -> No changes required
-void TrackManager::HandleIndexUpdate_Playback_OnExitState(uint32_t track_number) {
+void TrackManager::IndexUpdatePlaybackExit(uint32_t track_number) {
 }
 
 // OnExitState (leaving to another state)
 // -> No changes required
-void TrackManager::HandleIndexUpdate_PlaybackRepeat_OnExitState(uint32_t track_number) {
+void TrackManager::IndexUpdateRepeatExit(uint32_t track_number) {
 }
 
 
@@ -300,43 +282,31 @@ void TrackManager::HandleIndexUpdate_PlaybackRepeat_OnExitState(uint32_t track_n
 // There is nothing to handle the current index of non-focus tracks under this condition
 // Also, if all tracks are in playback, master needs to be updated
 // Unless all tracks are in off, update master here
-// TODO FIX BUG: only update master ONCE - use flag?
-void TrackManager::HandleIndexUpdate_AlreadyInState_AllStates() {
+// A flag exists because we should update the master current index only once
+void TrackManager::IndexUpdateAllStatesNoChange() {
   // loop through all tracks
-  master_current_index_updated = false;
+  master_current_index_updated_ = false;
   for (uint32_t track_number = 0; track_number < tracks.size(); track_number++) {
     if (tracks.at(track_number).IsTrackOff()) {
       continue;
     }
     if (tracks.at(track_number).IsTrackInRecord()) {
-      HandleIndexUpdate_Recording_AlreadyInState(track_number);
+      IndexUpdateRecordNoChange(track_number);
       // Update the _end_index 
-#ifdef DTEST_TM_AIS
-      HandleIndexUpdate_Recording_OnExitState(track_number);
-#endif
       continue; // don't waste time doing rest of the checks
     }
     if (tracks.at(track_number).IsTrackOverdubbing()) {
-      HandleIndexUpdate_Overdubbing_AlreadyInState(track_number);
-#ifdef DTEST_TM_AIS
-      HandleIndexUpdate_Overdubbing_OnExitState(track_number);
-#endif
+      IndexUpdateOverdubNoChange(track_number);
       continue; // don't waste time doing rest of the checks
     }
     // Mute is playback but silent, so keep indexes updating
     if (tracks.at(track_number).IsTrackInPlayback() ||
         tracks.at(track_number).IsTrackMuted()) {
-      HandleIndexUpdate_Playback_AlreadyInState(track_number);
-#ifdef DTEST_TM_AIS
-      HandleIndexUpdate_Playback_OnExitState(track_number);
-#endif
+      IndexUpdatePlaybackNoChange(track_number);
       continue; // don't waste time doing rest of the checks
     }
     if (tracks.at(track_number).IsTrackInPlaybackRepeat()) {
-      HandleIndexUpdate_PlaybackRepeat_AlreadyInState(track_number);
-#ifdef DTEST_TM_AIS
-      HandleIndexUpdate_PlaybackRepeat_OnExitState(track_number);
-#endif
+      IndexUpdateRepeatNoChange(track_number);
       continue; // don't waste time doing rest of the checks
     }
   }
@@ -345,35 +315,35 @@ void TrackManager::HandleIndexUpdate_AlreadyInState_AllStates() {
 /*
  * Set Track State Handlers
  */
-void TrackManager::SetTrackState_Off(uint32_t track_number) {
+void TrackManager::SetTrackStateOff(uint32_t track_number) {
   tracks.at(track_number).SetTrackToOff();
 }
 
-void TrackManager::SetTrackState_Record(uint32_t track_number) {
+void TrackManager::SetTrackStateRecord(uint32_t track_number) {
   tracks.at(track_number).SetTrackToInRecord();
 }
 
-void TrackManager::SetTrackState_Overdub(uint32_t track_number) {
+void TrackManager::SetTrackStateOverdub(uint32_t track_number) {
   tracks.at(track_number).SetTrackToOverdubbing();
 }
 
-void TrackManager::SetTrackState_Playback(uint32_t track_number) {
+void TrackManager::SetTrackStatePlayback(uint32_t track_number) {
   tracks.at(track_number).SetTrackToInPlayback();
 }
 
-void TrackManager::SetTrackState_Repeat(uint32_t track_number) {
+void TrackManager::SetTrackStateRepeat(uint32_t track_number) {
   tracks.at(track_number).SetTrackToInPlaybackRepeat();
 }
 
-void TrackManager::SetTrackState_Mute(uint32_t track_number) {
+void TrackManager::SetTrackStateMute(uint32_t track_number) {
   tracks.at(track_number).SetTrackToMuted();
 }
 
 
 /*
- * State Change Handlers
+ * State Change Handlers Used by tests
  */
-
+#ifdef DTEST_TM
 // Handle State Change - Recording(track_number, data)
 // -> Caller should provide pointer to buffer from audio source
 void TrackManager::HandleStateChange_Recording(uint32_t track_number, DataBlock &data) {
@@ -382,7 +352,7 @@ void TrackManager::HandleStateChange_Recording(uint32_t track_number, DataBlock 
   static uint32_t current_track = 0;
   if (current_track != track_number) {
     if (tracks.at(current_track).IsTrackInRecord()) {
-      HandleIndexUpdate_Recording_OnExitState(track_number);
+      IndexUpdateRecordExit(track_number);
       tracks.at(current_track).SetTrackToInPlayback();
       current_track = track_number;
     }
@@ -391,7 +361,7 @@ void TrackManager::HandleStateChange_Recording(uint32_t track_number, DataBlock 
   if (!tracks.at(track_number).IsTrackInRecord()) {
     // OnEnterState
     // -> HandleIndexUpdate_Recording_OnEnter
-    HandleIndexUpdate_Recording_OnEnterState(track_number);
+    IndexUpdateRecordEnter(track_number);
   }
   // InRecording
   // -> SetBlockData(GetCurrentIndex(), DataBlock data)
@@ -405,7 +375,7 @@ void TrackManager::HandleStateChange_Recording(uint32_t track_number, DataBlock 
 
   // OnExitState
   // -> HandleIndexUpdate_Recording_OnExit
-  // HandleIndexUpdate_Recording_OnExitState(track_number);
+  // IndexUpdateRecordExit(track_number);
 }
 
 // Handle State Change - Overdubbing(track_number, data)
@@ -413,7 +383,7 @@ void TrackManager::HandleStateChange_Overdubbing(uint32_t track_number, DataBloc
   if (!tracks.at(track_number).IsTrackOverdubbing()) {
     // OnEnterState
     // -> HandleIndexUpdate_Overdubbing_OnEnter
-    HandleIndexUpdate_Overdubbing_OnEnterState(track_number);
+    IndexUpdateOverdubEnter(track_number);
   }
   // InOverdubbing
   // -> Create temp block for mixing
@@ -426,7 +396,7 @@ void TrackManager::HandleStateChange_Overdubbing(uint32_t track_number, DataBloc
   // -> track.SetBlockData(CurrentBlockIndex, temp_block)
 #ifdef DTEST_TM_VERBOSE
 std::cout << "  *** SetBlockData Overdub curr_idx " << current_index << std::endl;
-std::cout << "      master_current_index " << master_current_index << std::endl;
+std::cout << "      master_current_index_ " << master_current_index_ << std::endl;
 temp_block.PrintBlock();
 #endif
 
@@ -439,7 +409,7 @@ temp_block.PrintBlock();
 
   // OnExitState
   // -> HandleIndexUpdate_Overdubbing_OnExit
-  // HandleIndexUpdate_Overdubbing_OnExitState(track_number);
+  // IndexUpdateOverdubExit(track_number);
 }
 
 // Handle State Change - Playback(track_number)
@@ -450,7 +420,7 @@ void TrackManager::HandleStateChange_Playback(uint32_t track_number) {
       !tracks.at(track_number).IsTrackMuted()) {
     // OnEnterState
     // -> HandleIndexUpdate_Playback_OnEnter
-    HandleIndexUpdate_Playback_OnEnterState(track_number);
+    IndexUpdatePlaybackEnter(track_number);
   }
   // InPlayback
   // -> SetStateToInPlayback()
@@ -461,7 +431,7 @@ void TrackManager::HandleStateChange_Playback(uint32_t track_number) {
 
   // OnExitState
   // -> HandleIndexUpdate_Playback_OnExit
-  // HandleIndexUpdate_Playback_OnExitState(track_number);
+  // IndexUpdatePlaybackExit(track_number);
 }
 
 // Handle State Change - PlaybackRepeat(track_number)
@@ -469,7 +439,7 @@ void TrackManager::HandleStateChange_PlaybackRepeat(uint32_t track_number) {
   if (!tracks.at(track_number).IsTrackInPlaybackRepeat()) {
     // OnEnterState
     // -> HandleIndexUpdate_PlaybackRepeat_OnEnter
-    HandleIndexUpdate_PlaybackRepeat_OnEnterState(track_number);
+    IndexUpdateRepeatEnter(track_number);
   }
   // InPlaybackRepeat
   // -> SetStateToInPlaybackRepeat()
@@ -480,7 +450,7 @@ void TrackManager::HandleStateChange_PlaybackRepeat(uint32_t track_number) {
 
   // OnExitState
   // -> HandleIndexUpdate_Playback_OnExit
-  // HandleIndexUpdate_PlaybackRepeat_OnExitState(track_number);
+  // IndexUpdateRepeatExit(track_number);
 }
 
 // Handle State Change - Mute (track_number)
@@ -488,7 +458,7 @@ void TrackManager::HandleStateChange_Mute(uint32_t track_number) {
   tracks.at(track_number).SetTrackToMuted();
   PerformMixdown();
 }
-
+#endif
 
 
 // Mute tracks where 1 is set, 0 to unmute
@@ -514,14 +484,14 @@ void TrackManager::HandleMuteUnmuteTracks(uint16_t tracks_to_mute_unmute) {
  */
 
 void TrackManager::SyncTrackManagerStateWithTrackState(uint32_t track_number) {
-  if (last_track_number == track_number) {
+  if (last_track_number_ == track_number) {
     return;
   }
   // Special case -- if previous operation was a record/overdub on a different track
   // we must set it to playback then continue with syncing
-  if (tracks.at(last_track_number).IsTrackOverdubbing() ||
-      tracks.at(last_track_number).IsTrackInRecord()) {
-      SetState(Play::getInstance(), last_track_number);
+  if (tracks.at(last_track_number_).IsTrackOverdubbing() ||
+      tracks.at(last_track_number_).IsTrackInRecord()) {
+      SetState(Play::getInstance(), last_track_number_);
   }
   if (tracks.at(track_number).IsTrackOff()) {
     current_state = &Off::getInstance();
@@ -551,9 +521,9 @@ void TrackManager::SyncTrackManagerStateWithTrackState(uint32_t track_number) {
 }
 
 void TrackManager::SetState(TrackManagerState &new_state, uint32_t track_number) {
-  current_state->exit(*this, track_number);
+  current_state->Exit(*this, track_number);
   current_state = &new_state;
-  current_state->enter(*this, track_number);
+  current_state->Enter(*this, track_number);
 }
 
 /*
@@ -561,24 +531,24 @@ void TrackManager::SetState(TrackManagerState &new_state, uint32_t track_number)
  */
 
 void TrackManager::CopyBufferToTrack(uint32_t track_number) {
-  tracks.at(track_number).SetBlockData(tracks.at(track_number).GetCurrentIndex(), input_buffer);
+  tracks.at(track_number).SetBlockData(tracks.at(track_number).GetCurrentIndex(), input_buffer_);
 }
 
 void TrackManager::CopyToInputBuffer(void *d, uint32_t nsamples) {
   int *data = (int *)d;
   if (nsamples > SAMPLES_PER_BLOCK) {
-    std::copy(data, data + SAMPLES_PER_BLOCK, begin(input_buffer.samples));
+    std::copy(data, data + SAMPLES_PER_BLOCK, begin(input_buffer_.samples_));
   } else {
-    std::copy(data, data + nsamples, begin(input_buffer.samples));
+    std::copy(data, data + nsamples, begin(input_buffer_.samples_));
   }
 }
 
 void TrackManager::CopyMixdownToBuffer(void *d, uint32_t nsamples) {
   int *data = (int *)d;
   if (nsamples > SAMPLES_PER_BLOCK) {
-    std::copy(begin(mixdown.samples), end(mixdown.samples), data);
+    std::copy(begin(mixdown.samples_), end(mixdown.samples_), data);
   } else {
-    std::copy(begin(mixdown.samples), begin(mixdown.samples) + nsamples, data);
+    std::copy(begin(mixdown.samples_), begin(mixdown.samples_) + nsamples, data);
   }
 }
 
@@ -601,34 +571,34 @@ void TrackManager::CopyMixdownToBuffer(void *d, uint32_t nsamples) {
 void TrackManager::HandleDownEvent(uint32_t track_number) {
   // sync with track
   SyncTrackManagerStateWithTrackState(track_number);
-  current_state->handle_down_event(*this, track_number);
-  last_track_number = track_number;
+  current_state->DownEvent(*this, track_number);
+  last_track_number_ = track_number;
 }
 
 void TrackManager::HandleDoubleDownEvent(uint32_t track_number) {
   // sync with track
   SyncTrackManagerStateWithTrackState(track_number);
-  current_state->handle_double_down_event(*this, track_number);
-  last_track_number = track_number;
+  current_state->DoubleDownEvent(*this, track_number);
+  last_track_number_ = track_number;
 }
 
 void TrackManager::HandleShortPulseEvent(uint32_t track_number) {
   // sync with track
   SyncTrackManagerStateWithTrackState(track_number);
-  current_state->handle_short_pulse_event(*this, track_number);
-  last_track_number = track_number;
+  current_state->ShortPulseEvent(*this, track_number);
+  last_track_number_ = track_number;
 }
 
 void TrackManager::HandleLongPulseEvent(uint32_t track_number) {
   // sync with track
   SyncTrackManagerStateWithTrackState(track_number);
-  current_state->handle_long_pulse_event(*this, track_number);
-  last_track_number = track_number;
+  current_state->LongPulseEvent(*this, track_number);
+  last_track_number_ = track_number;
 }
 
 void TrackManager::StateProcess(uint32_t track_number) {
   SyncTrackManagerStateWithTrackState(track_number);
-  current_state->active(*this, track_number);
+  current_state->Active(*this, track_number);
 }
 
 bool TrackManager::AreAllTracksOff() {
@@ -638,8 +608,8 @@ bool TrackManager::AreAllTracksOff() {
     }
   }
   // reset master's indexes
-  master_current_index = 0;
-  master_end_index = 0;
+  master_current_index_ = 0;
+  master_end_index_ = 0;
   return true;
 }
 

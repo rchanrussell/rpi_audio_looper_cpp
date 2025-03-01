@@ -1,10 +1,18 @@
 #include "group_manager.h"
+#include "group_manager_states.h"
 
 // Default Constructor - set all data to zero
 GroupManager::GroupManager() {
   std::cout << "GroupManager: DF called" << std::endl;
   active_group = MAX_GROUP_COUNT; // This forces user to set the active group
   // and it prevents group 0 from being ignored by SetActiveGroup
+  current_state = &NotActive::getInstance();
+  for (auto &g : groups) {
+    g = 0;
+  }
+  for (auto &i : group_master_end_index) {
+    i = 0;
+  }
 }
 
 void GroupManager::AddTrackToGroup(uint32_t track_number, uint8_t group_number) {
@@ -107,4 +115,46 @@ void GroupManager::DisplayGroups() {
     std::cout << "0x" << std::hex << g << " ";
   }
   std::cout << std::endl;
+}
+
+void GroupManager::HandleDownEvent(TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  current_state->handle_down_event(*this, tm, group_number, track_number);
+}
+
+void GroupManager::HandleDoubleDownEvent(TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  current_state->handle_double_down_event(*this, tm, group_number, track_number);
+}
+
+void GroupManager::HandleShortPulseEvent(TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  current_state->handle_short_pulse_event(*this, tm, group_number, track_number);
+}
+
+void GroupManager::HandleLongPulseEvent(TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  current_state->handle_long_pulse_event(*this, tm, group_number, track_number);
+}
+
+void GroupManager::SetState(GroupManagerState &new_state, TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  current_state->exit(*this, tm, group_number, track_number);
+  current_state = &new_state;
+  current_state->enter(*this, tm, group_number, track_number);
+}
+
+void GroupManager::StateProcess(TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  current_state->active(*this, tm, group_number, track_number);
+}
+
+bool GroupManager::IsStateNotActive() {
+  return static_cast<void*>(current_state) == static_cast<void*>(&NotActive::getInstance());
+}
+
+bool GroupManager::IsStateActive() {
+  return static_cast<void*>(current_state) == static_cast<void*>(&Active::getInstance());
+}
+
+bool GroupManager::IsStateAddTrack() {
+  return static_cast<void*>(current_state) == static_cast<void*>(&AddTrack::getInstance());
+}
+
+bool GroupManager::IsStateRemoveAllTracks() {
+  return static_cast<void*>(current_state) == static_cast<void*>(&RemoveAllTracks::getInstance());
 }

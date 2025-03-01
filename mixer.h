@@ -4,6 +4,7 @@
 #include <array>
 #include <iostream>
 #include <iterator>
+
 #include "data_block.h"
 
 void MixBlocks(const DataBlock &block1, const DataBlock &block2, DataBlock &mix_down);

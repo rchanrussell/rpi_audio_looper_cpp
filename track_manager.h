@@ -4,57 +4,11 @@
 #include <array>
 #include <iostream>
 #include <iterator>
+
 #include "util.h"
 #include "track.h"
 #include "mixer.h"
 #include "track_manager_state.h"
-
-
-enum SystemEvents
-{
-/* IDLE is from a separate input and requires a separate handler
-* These below are actually track events
-* If all tracks are off the system is in idle state or the separate input process
-* will do this with a single procedure
-*/
-  SYSTEM_EVENT_IDLE,                      // System->passthrough, all tracks->off, all indexes set to 0
-  SYSTEM_EVENT_RECORD_TRACK,              // System->recording, track->recording - track & group # required
-  SYSTEM_EVENT_OVERDUB_TRACK,             // System->overdubbing, track->recording - track & group # required
-  SYSTEM_EVENT_PLAY_TRACK,                // Reset's track's current index to start index and state to play - track # required
-  SYSTEM_EVENT_MUTE_TRACK,                // Place particular track into Mute state - track # required
-  SYSTEM_EVENT_UNMUTE_TRACK,              // Changes track to Play state - track # required
-  SYSTEM_EVENT_ADD_TRACK_TO_GROUP,        // Adds a track to a group - nothing more - track # & group # required
-  SYSTEM_EVENT_REMOVE_TRACK_FROM_GROUP,   // Removes track from a group - track # & group # required
-  SYSTEM_EVENT_SET_ACTIVE_GROUP,          // Sets the currently active group - group # required
-};
-
-enum SystemStates
-{
-// These are actually track and system state hybrid - if all tracks off - system is idle
-// but some tracks will be in various states OFF/REC/OVERDUB/PLAY/REPEAT/MUTE
-// The system really just tracks the last track state and doesn't have it's own
-// concept of a state other than off/operating
-// copying of buffer depends on the last track state (or TM's current state)
-// You can't have a track in record and the current state of TM not be record
-// Only time TM is in record or overdub is if active track is there
-// Playback or more corectly, mixdown data transfer is enabled always
-// Tracks that are off/playback/repeat/mute will transfer data (or blocks of zeroes)
-// depending on the indexes and state (mute/off always send zeroes)
-// Rec/Overdub also always send data as we copy the data, mixit and send it out with the rest
-// from the other tracks
-  SYSTEM_STATE_IDLE,              // No mixdown or recording
-  SYSTEM_STATE_PLAYBACK,          // Tracks available for mixing and playing
-  SYSTEM_STATE_PLAYBACK_REPEAT,   // Tracks available for mixing and playing
-  SYSTEM_STATE_RECORDING,         // Copying data to selected track
-  SYSTEM_STATE_OVERDUBBING,       // Overdubbing selected track
-};
-
-
-// TODO State Machine of events
-// Sets track state based upon event received
-// Transfer data from input audio buffer to track in recording
-// Perform mixdown on tracks not silent and transfer data to output audio buffer
-// 
 
 class TrackManagerState;
 
@@ -65,27 +19,33 @@ class TrackManager {
   // Keep track of last track
   // if in Rec or Overdub and Rec/Overdub comes for another track, we must set
   // last track to play then proceed to perform operations on the 
-  uint32_t last_track_number;
+  uint32_t last_track_number_;
 
   // no need for master start index, as it will always be zero! at least
   // one track must start at zero (if no audio desired, don't play, record silence)
-  uint32_t master_end_index;
-  uint32_t master_current_index;
-  bool master_current_index_updated;
+  uint32_t master_end_index_;
+  uint32_t master_current_index_;
+  bool master_current_index_updated_;
 
   // DataBuffers
   // Input for Rec and Overdub
-  DataBlock input_buffer;
+  DataBlock input_buffer_;
 
   // Output for all states
 //  DataBlock mixdown;
 
+#ifndef DTEST_TM
   // Active State Index Updates by State
-  void HandleIndexUpdate_Recording_AlreadyInState(uint32_t track_number);
-  void HandleIndexUpdate_Overdubbing_AlreadyInState(uint32_t track_number);
-  void HandleIndexUpdate_Playback_AlreadyInState(uint32_t track_number);
-  void HandleIndexUpdate_PlaybackRepeat_AlreadyInState(uint32_t track_number);
-  void HandleIndexUpdate_ReachedEndOfAvailableSpace(uint32_t track_number);
+  void IndexUpdateRecordNoChange(uint32_t track_number);
+  void IndexUpdateOverdubNoChange(uint32_t track_number);
+  void IndexUpdatePlaybackNoChange(uint32_t track_number);
+  void IndexUpdateRepeatNoChange(uint32_t track_number);
+  void IndexUpdateReachedEndOfAvailableSpace(uint32_t track_number);
+#endif
+
+  // Mixdown subfunctions
+  uint32_t DetermineIndex(uint32_t track);
+  void SilentPlaybackTrack(uint32_t track, uint32_t index);
 
   // State Machine Section
   TrackManagerState* current_state;
@@ -93,7 +53,20 @@ class TrackManager {
   public:
   // Member variables
 #ifdef DTEST_TM
+  // For Tests
   std::array<Track, MAX_TRACK_COUNT> tracks;
+  // Active State Index Updates by State
+  void IndexUpdateRecordNoChange(uint32_t track_number);
+  void IndexUpdateOverdubNoChange(uint32_t track_number);
+  void IndexUpdatePlaybackNoChange(uint32_t track_number);
+  void IndexUpdateRepeatNoChange(uint32_t track_number);
+  void IndexUpdateReachedEndOfAvailableSpace(uint32_t track_number);
+
+  void HandleStateChange_Recording(uint32_t track_number, DataBlock &data);
+  void HandleStateChange_Overdubbing(uint32_t track_number, DataBlock &data);
+  void HandleStateChange_Playback(uint32_t track_number);
+  void HandleStateChange_PlaybackRepeat(uint32_t track_number);
+  void HandleStateChange_Mute(uint32_t track_number);
 #endif
 
   // TODO make private, add getter function
@@ -111,13 +84,6 @@ class TrackManager {
   void SetMasterEndIndex(uint32_t end);
   uint32_t GetMasterCurrentIndex();
   uint32_t GetMasterEndIndex();
-
-  // For Tests
-  void HandleStateChange_Recording(uint32_t track_number, DataBlock &data);
-  void HandleStateChange_Overdubbing(uint32_t track_number, DataBlock &data);
-  void HandleStateChange_Playback(uint32_t track_number);
-  void HandleStateChange_PlaybackRepeat(uint32_t track_number);
-  void HandleStateChange_Mute(uint32_t track_number);
 
   // This is for Group Manager which knows which tracks it needs to mute/unmute
   // so no getter required, just a simple single function call to simplify code
@@ -144,30 +110,30 @@ class TrackManager {
   // anyway, so when we leave those states the indexes will be updated to where they
   // should be
   // On Enter
-  void HandleIndexUpdate_Recording_OnEnterState(uint32_t track_number);
-  void HandleIndexUpdate_Overdubbing_OnEnterState(uint32_t track_number);
-  void HandleIndexUpdate_Playback_OnEnterState(uint32_t track_number);
-  void HandleIndexUpdate_PlaybackRepeat_OnEnterState(uint32_t track_number);
+  void IndexUpdateRecordEnter(uint32_t track_number);
+  void IndexUpdateOverdubEnter(uint32_t track_number);
+  void IndexUpdatePlaybackEnter(uint32_t track_number);
+  void IndexUpdateRepeatEnter(uint32_t track_number);
 
   // On Exit
-  void HandleIndexUpdate_Recording_OnExitState(uint32_t track_number); 
-  void HandleIndexUpdate_Overdubbing_OnExitState(uint32_t track_number);
-  void HandleIndexUpdate_Playback_OnExitState(uint32_t track_number);
-  void HandleIndexUpdate_PlaybackRepeat_OnExitState(uint32_t track_number);
+  void IndexUpdateRecordExit(uint32_t track_number); 
+  void IndexUpdateOverdubExit(uint32_t track_number);
+  void IndexUpdatePlaybackExit(uint32_t track_number);
+  void IndexUpdateRepeatExit(uint32_t track_number);
 
   // Set Track State
-  void SetTrackState_Off(uint32_t track_number);
-  void SetTrackState_Record(uint32_t track_number);
-  void SetTrackState_Overdub(uint32_t track_number);
-  void SetTrackState_Playback(uint32_t track_number);
-  void SetTrackState_Repeat(uint32_t track_number);
-  void SetTrackState_Mute(uint32_t track_number);
+  void SetTrackStateOff(uint32_t track_number);
+  void SetTrackStateRecord(uint32_t track_number);
+  void SetTrackStateOverdub(uint32_t track_number);
+  void SetTrackStatePlayback(uint32_t track_number);
+  void SetTrackStateRepeat(uint32_t track_number);
+  void SetTrackStateMute(uint32_t track_number);
 
   // Reset condition -- if all tracks are off - reset our master current and end indexes
   bool AreAllTracksOff();
 
   // Active
-  void HandleIndexUpdate_AlreadyInState_AllStates();
+  void IndexUpdateAllStatesNoChange();
 
   // Data Transfers Copy To Track
   void CopyBufferToTrack(uint32_t track_number);
@@ -184,7 +150,6 @@ class TrackManager {
   void HandleDoubleDownEvent(uint32_t track_number);
   void HandleShortPulseEvent(uint32_t track_number);
   void HandleLongPulseEvent(uint32_t track_number);
-  
 
 };
 #endif // TRACK_MANAGER_H

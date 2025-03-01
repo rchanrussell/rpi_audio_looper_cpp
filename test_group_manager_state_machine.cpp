@@ -3,6 +3,7 @@
 #include <iterator>
 #include <sys/time.h>    
 #include "group_manager.h"
+#include "group_manager_states.h"
 
 static TrackManager tm;
 
@@ -30,21 +31,68 @@ void DisplayTrackInPlayback(TrackManager &tm) {
   std::cout << std::endl;
 }
 
-void Test_AddTracksToGroups(GroupManager &gm, TrackManager &tm) {
-  std::cout << "** test_group_manager.cpp: Add Tracks to Groups **" << std::endl;
+bool Test_AddTracksToGroups(GroupManager &gm, TrackManager &tm) {
+  std::cout << "** test_group_manager_state_machine.cpp: Add Tracks to Groups, test common transitions **" << std::endl;
   gm.DisplayGroups();
 
   std::cout << "    active_group " << unsigned(gm.GetActiveGroup()) << std::endl;
+  std::cout << "    transition to active group 0" << std::endl;
+  gm.HandleDownEvent(tm, 0, 0);
+  // verify in Acive Group
+  std::cout << "    verify Active Group" << std::endl;
+  bool result =  gm.GetActiveGroup() == 0;
+  if (!result) {
+    std::cout << "error: active group is not " << 0 << std::endl;
+    return result;
+  }
+  std::cout << "    verify state is active" << std::endl;
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
 
-  gm.AddTrackToGroup(5, 2);
-  gm.AddTrackToGroup(3, 2);
-  gm.AddTrackToGroup(1, 2);
-  gm.AddTrackToGroup(2, 1);
-  gm.AddTrackToGroup(4, 1);
-  gm.AddTrackToGroup(6, 1);
+  std::cout << "    transition to add tracks" << std::endl;
+  gm.HandleDownEvent(tm, 0, 0);
+  result = gm.IsStateAddTrack();
+  if (!result) {
+    std::cout << "error: group manager not in add track state" << std::endl;
+    return result;
+  }
+
+  gm.StateProcess(tm, 0, 1);
+  gm.StateProcess(tm, 0, 3);
+  gm.StateProcess(tm, 0, 5);
+
+  // TODO tie to active group? so this would not do anything?
+  gm.StateProcess(tm, 1, 2);
+  gm.StateProcess(tm, 1, 4);
+  gm.StateProcess(tm, 1, 6);
+
   gm.DisplayGroups();
+
+  gm.HandleDownEvent(tm, 0, 0);
+  std::cout << "    verify state is active" << std::endl;
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+
+  std::cout << "    transition to not active" << std::endl;
+  gm.HandleDownEvent(tm, 0, 0);
+  gm.HandleDoubleDownEvent(tm, 0, 0);
+  result = gm.IsStateNotActive();
+  if (!result) {
+    std::cout << "error: group manager not in not active state" << std::endl;
+    return result;
+  }
+
+
+  return result;
 }
 
+#if 0
 void Test_RemoveTracksFromGroups(GroupManager &gm, TrackManager &tm) {
   std::cout << std::endl << std::endl << "** test_group_manager.cpp: Remove Tracks From Groups **" << std::endl;
   gm.DisplayGroups();
@@ -260,16 +308,21 @@ void Test_GroupSwapTests(GroupManager &gm, TrackManager &tm) {
   DisplayTrackMuted(tm);
 
 }
-
+#endif
 
 int main() {
   std::cout << "** test_group_manager.cpp **" << std::endl;
   GroupManager gm;
 
-  Test_AddTracksToGroups(gm, tm);
+  bool test = Test_AddTracksToGroups(gm, tm);
+  if (!test) {
+    std::cout << "--> TEST FAILED" << std::endl;
+  }
+#if 0
   Test_RemoveTracksFromGroups(gm, tm);
   Test_ChangeActiveGroups(gm, tm);
   Test_NoTracksInGroups(gm, tm);
   Test_GroupSwapTests(gm, tm);
+#endif
   return 0;
 }

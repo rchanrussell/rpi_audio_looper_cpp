@@ -12,8 +12,8 @@ static Track test_track(0.0f);
 static TrackManager tm;
 
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
-  for (unsigned long int i = 0; i < expected.samples.size(); i++) {
-    if (expected.samples[i] != test.samples[i]) return false;
+  for (unsigned long int i = 0; i < expected.samples_.size(); i++) {
+    if (expected.samples_[i] != test.samples_[i]) return false;
   }
   return true;
 }
@@ -26,8 +26,8 @@ void Test_SimulateRecord(Track &test_track) {
   DataBlock test_data_incr(0.0f);
   bool result = false;
 
-  for (uint32_t index = 0; index < test_data_incr.samples.size(); index++) {
-    test_data_incr.samples[index] = value++;
+  for (uint32_t index = 0; index < test_data_incr.samples_.size(); index++) {
+    test_data_incr.samples_[index] = value++;
   }
 
   // Starting from scratch, all data is zero
@@ -72,8 +72,8 @@ void Test_SimulatePlayback(Track &test_track) {
   DataBlock test_data_incr(0.0f);
   bool result = false;
 
-  for (uint32_t index = 0; index < test_data_incr.samples.size(); index++) {
-    test_data_incr.samples[index] = value++;
+  for (uint32_t index = 0; index < test_data_incr.samples_.size(); index++) {
+    test_data_incr.samples_[index] = value++;
   }
 
   // Starting from a previously set recording state
@@ -108,8 +108,8 @@ void Test_SimulateOverdub(Track &test_track) {
   DataBlock mixdown(0.0f); // temporary because MixBlocks doesn't modify sources
   bool result = false;
 
-  for (uint32_t index = 0; index < test_data_incr.samples.size(); index++) {
-    test_data_incr.samples[index] = value++;
+  for (uint32_t index = 0; index < test_data_incr.samples_.size(); index++) {
+    test_data_incr.samples_[index] = value++;
   }
 
   // Test assumes coming from playback test
@@ -214,31 +214,31 @@ void Test_CreateVoidPtrMemConvertToDataBlock() {
   struct timeval t1, t2, tdiff;
 
   gettimeofday(&t1, NULL);
-  std::copy(ptr, ptr + SAMPLES_PER_BLOCK, begin(ip.samples));
+  std::copy(ptr, ptr + SAMPLES_PER_BLOCK, begin(ip.samples_));
   gettimeofday(&t2, NULL);
   timersub(&t2, &t1, &tdiff);
   std::cout << "td: " << tdiff.tv_sec << "," << tdiff.tv_usec << std::endl;
 
   for (int idx=0; idx <SAMPLES_PER_BLOCK; idx++) {
-    if (ptr[idx] != ip.samples.at(idx)) {
+    if (ptr[idx] != ip.samples_.at(idx)) {
       std::cout << "memcpy ptr -- mismatch at " << idx << std::endl;
-      std::cout << "ptr: " << unsigned(ptr[idx]) << ", ip.s[idx]:" << ip.samples.at(idx) << std::endl;
+      std::cout << "ptr: " << unsigned(ptr[idx]) << ", ip.s[idx]:" << ip.samples_.at(idx) << std::endl;
       break;
     }
   }
 
   gettimeofday(&t1, NULL);
   for (int idx =0; idx < SAMPLES_PER_BLOCK; idx++) {
-    ip.samples.at(idx) = ptr[idx];
+    ip.samples_.at(idx) = ptr[idx];
   }
   gettimeofday(&t2, NULL);
   timersub(&t2, &t1, &tdiff);
   std::cout << "td: " << tdiff.tv_sec << "," << tdiff.tv_usec << std::endl;
 
   for (int idx=0; idx <SAMPLES_PER_BLOCK; idx++) {
-    if (ptr[idx] != ip.samples.at(idx)) {
+    if (ptr[idx] != ip.samples_.at(idx)) {
       std::cout << "for:ip.s[i]=ptr[i] -- mismatch at " << idx << std::endl;
-      std::cout << "ptr: " << unsigned(ptr[idx]) << ", ip.s[idx]:" << ip.samples.at(idx) << std::endl;
+      std::cout << "ptr: " << unsigned(ptr[idx]) << ", ip.s[idx]:" << ip.samples_.at(idx) << std::endl;
       break;
     }
   }
@@ -253,8 +253,8 @@ void Test_CreateVoidPtrMemConvertToDataBlock() {
   tm.tracks.at(0).SetEndIndex(1);
   tm.tracks.at(1).SetEndIndex(1);
   tm.SetMasterEndIndex(1);
-  tm.SetTrackState_Playback(0);
-  tm.SetTrackState_Playback(1);
+  tm.SetTrackStatePlayback(0);
+  tm.SetTrackStatePlayback(1);
   tm.PerformMixdown();
   tm.mixdown.PrintBlock();
 

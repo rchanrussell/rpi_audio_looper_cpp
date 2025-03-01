@@ -7,8 +7,8 @@
 static Track test_track(0.0f);
 
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
-  for (int i = 0; i < expected.samples.size(); i++) {
-    if (expected.samples[i] != test.samples[i]) return false;
+  for (int i = 0; i < expected.samples_.size(); i++) {
+    if (expected.samples_[i] != test.samples_[i]) return false;
   }
   return true;
 }
@@ -21,8 +21,8 @@ void Test_SimulateRecord(Track &test_track) {
   DataBlock test_data_incr(0.0f);
   bool result = false;
 
-  for (uint32_t index = 0; index < test_data_incr.samples.size(); index++) {
-    test_data_incr.samples[index] = value++;
+  for (uint32_t index = 0; index < test_data_incr.samples_.size(); index++) {
+    test_data_incr.samples_[index] = value++;
   }
 
   // Starting from scratch, all data is zero
@@ -67,8 +67,8 @@ void Test_SimulatePlayback(Track &test_track) {
   DataBlock test_data_incr(0.0f);
   bool result = false;
 
-  for (uint32_t index = 0; index < test_data_incr.samples.size(); index++) {
-    test_data_incr.samples[index] = value++;
+  for (uint32_t index = 0; index < test_data_incr.samples_.size(); index++) {
+    test_data_incr.samples_[index] = value++;
   }
 
   // Starting from a previously set recording state
@@ -103,8 +103,8 @@ void Test_SimulateOverdub(Track &test_track) {
   DataBlock mixdown(0.0f); // temporary because MixBlocks doesn't modify sources
   bool result = false;
 
-  for (uint32_t index = 0; index < test_data_incr.samples.size(); index++) {
-    test_data_incr.samples[index] = value++;
+  for (uint32_t index = 0; index < test_data_incr.samples_.size(); index++) {
+    test_data_incr.samples_[index] = value++;
   }
 
   // Test assumes coming from playback test

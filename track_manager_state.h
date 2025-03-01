@@ -8,15 +8,15 @@ class TrackManager;
 class TrackManagerState {
   public:
   // State Specific Methods
-  virtual void enter(TrackManager &tm, uint32_t track_number) = 0;
-  virtual void exit(TrackManager &tm, uint32_t track_number) = 0;
-  virtual void active(TrackManager &tm, uint32_t track_number) = 0;
+  virtual void Enter(TrackManager &tm, uint32_t track_number) = 0;
+  virtual void Exit(TrackManager &tm, uint32_t track_number) = 0;
+  virtual void Active(TrackManager &tm, uint32_t track_number) = 0;
 
   // Event Specific Methods
-  virtual void handle_down_event(TrackManager &tm, uint32_t track_number) = 0;
-  virtual void handle_double_down_event(TrackManager &tm, uint32_t track_number) = 0;
-  virtual void handle_short_pulse_event(TrackManager &tm, uint32_t track_number) = 0;
-  virtual void handle_long_pulse_event(TrackManager &tm, uint32_t track_number) = 0;
+  virtual void DownEvent(TrackManager &tm, uint32_t track_number) = 0;
+  virtual void DoubleDownEvent(TrackManager &tm, uint32_t track_number) = 0;
+  virtual void ShortPulseEvent(TrackManager &tm, uint32_t track_number) = 0;
+  virtual void LongPulseEvent(TrackManager &tm, uint32_t track_number) = 0;
 
   virtual ~TrackManagerState() {};
   

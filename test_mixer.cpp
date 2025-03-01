@@ -7,8 +7,8 @@
 static Track t1, t2, t3, t4;
 
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
-  for (int i = 0; i < expected.samples.size(); i++) {
-    if (expected.samples[i] != test.samples[i]) return false;
+  for (int i = 0; i < expected.samples_.size(); i++) {
+    if (expected.samples_[i] != test.samples_[i]) return false;
   }
   return true;
 }
@@ -28,7 +28,7 @@ bool Test_SimpleMixerSummation(void) {
     offset += 10.0f;
   }
 
-  expected_results.samples.fill(expected_value);
+  expected_results.samples_.fill(expected_value);
 
 //  MixBlocks(t1.frame_blocks.at(0), t2.frame_blocks.at(0), mixed);
   MixBlocks(t1.GetBlockData(0), t2.GetBlockData(0), mixed);
