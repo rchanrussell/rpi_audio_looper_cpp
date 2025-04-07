@@ -39,7 +39,7 @@ void TrackManager::PerformMixdown() {
   // Clear mixdown as MixBlocks does not do this and shouldn't for simplicity
   mixdown.SetData(empty_block);
 
-  for (int t = 0; t < tracks.size(); t+=2) {
+  for (uint32_t t = 0; t < tracks.size(); t+=2) {
     // Handle index
     index_one = DetermineIndex(t);
     index_two = DetermineIndex(t + 1);

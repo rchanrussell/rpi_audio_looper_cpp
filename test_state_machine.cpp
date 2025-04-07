@@ -10,7 +10,7 @@
 static TrackManager tm;
 
 bool AreBlocksMatching(const DataBlock &expected, const DataBlock &test) {
-  for (int i = 0; i < expected.samples_.size(); i++) {
+  for (uint32_t i = 0; i < expected.samples_.size(); i++) {
     if (expected.samples_[i] != test.samples_[i]) return false;
   }
   return true;
@@ -1106,9 +1106,11 @@ bool Test_RecordingSingleTrackWithData(TrackManager &tm) {
     return result;
   }
 
+  std::cout << "    Input set" << std::endl;
   // Input
-  int *ptr =(int *)calloc(1, 1024);
-  if (!ptr) { std::cout << "input buf Calloc failed" << std::endl; return false; }
+  //int *ptr =(int *)calloc(1, 1024);
+  int ptr[1024];
+  //if (!ptr) { std::cout << "input buf Calloc failed" << std::endl; return false; }
   uint8_t val = 1; 
   for (int idx=0; idx<1024; idx++) {
     if (idx > 0 && (idx % 128 == 0)) { val++; }
@@ -1116,8 +1118,9 @@ bool Test_RecordingSingleTrackWithData(TrackManager &tm) {
   }
 
   // Output
-  int *pm =(int *)calloc(1, 1024);
-  if (!pm) { std::cout << "output buff Calloc failed" << std::endl; return false; }
+  //int *pm =(int *)calloc(1, 1024);
+  int pm[1024];
+  //if (!pm) { std::cout << "output buff Calloc failed" << std::endl; return false; }
 
 
   // Start 0 recording
@@ -1169,8 +1172,8 @@ bool Test_RecordingSingleTrackWithData(TrackManager &tm) {
     return result;
   }
 
-  free(ptr);
-  free(pm);
+  //free(ptr);
+  //free(pm);
   return true;
 }
 

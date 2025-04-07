@@ -259,7 +259,8 @@ void Test_CreateVoidPtrMemConvertToDataBlock() {
   tm.mixdown.PrintBlock();
 
   std::cout << "    copymixdown" << std::endl;
-  int *pm =(int *)calloc(1024,1);
+  //int *pm =(int *)calloc(1024,1);
+  int pm[1024];
   tm.CopyMixdownToBuffer(pm, 128);
   for (int idx=0; idx<128; idx++) {
     std::cout << pm[idx] << ", ";
@@ -267,7 +268,7 @@ void Test_CreateVoidPtrMemConvertToDataBlock() {
   }
 
   free(ptr);
-  free(pm);
+  //free(pm);
 }
 
 
