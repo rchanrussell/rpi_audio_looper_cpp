@@ -9,7 +9,9 @@
 #include "track.h"
 #include "mixer.h"
 #include "track_manager_state.h"
+#include "output_i2c.h"
 
+class OutputI2C;
 class TrackManagerState;
 
 class TrackManager {
@@ -49,6 +51,7 @@ class TrackManager {
 
   // State Machine Section
   TrackManagerState* current_state;
+  OutputI2C* output_i2c;
 
   public:
   // Member variables
@@ -150,6 +153,9 @@ class TrackManager {
   void HandleDoubleDownEvent(uint32_t track_number);
   void HandleShortPulseEvent(uint32_t track_number);
   void HandleLongPulseEvent(uint32_t track_number);
-
+  void SetOutputI2CPtr(OutputI2C* obj);
+  uint16_t GetTracksInMute();
+  uint16_t GetTracksInPlayback();
+  uint16_t GetTracksOff();
 };
 #endif // TRACK_MANAGER_H

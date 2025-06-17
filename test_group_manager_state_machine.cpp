@@ -31,8 +31,76 @@ void DisplayTrackInPlayback(TrackManager &tm) {
   std::cout << std::endl;
 }
 
+void DisplayTrackOff(TrackManager &tm) {
+  std::cout << "TGM::DTIO Is Off?" << std::endl;
+  for (auto &t : tm.tracks) {
+    std::cout << t.IsTrackOff() << " ";
+  }
+  std::cout << std::endl;
+}
+
+void DisplayTrackInRecord(TrackManager &tm) {
+  std::cout << "TGM::DTIR Is Rec?" << std::endl;
+  for (auto &t : tm.tracks) {
+    std::cout << t.IsTrackInRecord() << " ";
+  }
+  std::cout << std::endl;
+}
+
+
+bool Test_SelectGroups(GroupManager &gm, TrackManager &tm) {
+  std::cout << std::endl << "** test_group_manager_state_machine.cpp: Select different Groups **" << std::endl;
+  gm.DisplayGroups();
+
+  std::cout << "    active_group " << unsigned(gm.GetActiveGroup()) << std::endl;
+  std::cout << "    transition to active group 0" << std::endl;
+  gm.HandleDownEvent(tm, 0, 0);
+  // verify in Acive Group
+  std::cout << "    verify Active Group" << std::endl;
+  bool result =  gm.GetActiveGroup() == 0;
+  if (!result) {
+    std::cout << "error: active group is not " << 0 << std::endl;
+    return result;
+  }
+  std::cout << "    verify state is active" << std::endl;
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+
+  // Change to another group, verify state is Active and group matches
+  std::cout << "    simulate group 1 selection" << std::endl;
+  gm.HandleDownEvent(tm, 1, 0);
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+  result = gm.GetActiveGroup() == 1;
+  if (!result) {
+    std::cout << "error: active group is not " << 1 << std::endl;
+    return result;
+  }
+
+  // Change to another group, verify state is Active and group matches
+  std::cout << "    simulate group 4 selection" << std::endl;
+  gm.HandleDownEvent(tm, 4, 0);
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+  result = gm.GetActiveGroup() == 4;
+  if (!result) {
+    std::cout << "error: active group is not " << 4 << std::endl;
+    return result;
+  }
+  return result;
+}
+
 bool Test_AddTracksToGroups(GroupManager &gm, TrackManager &tm) {
-  std::cout << "** test_group_manager_state_machine.cpp: Add Tracks to Groups, test common transitions **" << std::endl;
+  std::cout << std::endl << "** test_group_manager_state_machine.cpp: Add Tracks to Groups, test common transitions **" << std::endl;
   gm.DisplayGroups();
 
   std::cout << "    active_group " << unsigned(gm.GetActiveGroup()) << std::endl;
@@ -63,12 +131,27 @@ bool Test_AddTracksToGroups(GroupManager &gm, TrackManager &tm) {
   gm.StateProcess(tm, 0, 1);
   gm.StateProcess(tm, 0, 3);
   gm.StateProcess(tm, 0, 5);
+  gm.DisplayGroups();
 
-  // TODO tie to active group? so this would not do anything?
+  std::cout << "    transition back to active group by selecting another group" << std::endl;
+  gm.HandleDownEvent(tm, 1, 2);
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+  std::cout << "    transition to add tracks" << std::endl;
+  gm.HandleDownEvent(tm, 1, 2);
+  result = gm.IsStateAddTrack();
+  if (!result) {
+    std::cout << "error: group manager not in add track state" << std::endl;
+    return result;
+  }
+
+  std::cout << "    add tracks 2, 4, 6 to group 1" << std::endl;
   gm.StateProcess(tm, 1, 2);
   gm.StateProcess(tm, 1, 4);
   gm.StateProcess(tm, 1, 6);
-
   gm.DisplayGroups();
 
   gm.HandleDownEvent(tm, 0, 0);
@@ -78,8 +161,10 @@ bool Test_AddTracksToGroups(GroupManager &gm, TrackManager &tm) {
     std::cout << "error: group manager not in active state" << std::endl;
     return result;
   }
+  std::cout << "    active group:" << gm.GetActiveGroup() << std::endl;
+  gm.DisplayGroups();
 
-  std::cout << "    transition to not active" << std::endl;
+  std::cout << "    transition to not active - perform double down" << std::endl;
   gm.HandleDownEvent(tm, 0, 0);
   gm.HandleDoubleDownEvent(tm, 0, 0);
   result = gm.IsStateNotActive();
@@ -87,6 +172,142 @@ bool Test_AddTracksToGroups(GroupManager &gm, TrackManager &tm) {
     std::cout << "error: group manager not in not active state" << std::endl;
     return result;
   }
+
+  return result;
+}
+
+bool Test_CheckTrackStateSwappingGroup_AllPlay(GroupManager &gm, TrackManager &tm) {
+  std::cout << std::endl << "** test_group_manager_state_machine.cpp: CheckTrackStateSwappingGroup_AllPlay **" << std::endl;
+  gm.DisplayGroups();
+
+  std::cout << "    active_group " << unsigned(gm.GetActiveGroup()) << std::endl;
+  std::cout << "    transition to active group 0" << std::endl;
+  gm.HandleDownEvent(tm, 0, 0);
+  // verify in Acive Group
+  std::cout << "    verify Active Group" << std::endl;
+  bool result =  gm.GetActiveGroup() == 0;
+  if (!result) {
+    std::cout << "error: active group is not " << 0 << std::endl;
+    return result;
+  }
+  std::cout << "    verify state is active" << std::endl;
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+
+  std::cout << "    tracks associated with group 0" << std::endl;
+  gm.DisplayGroups();
+
+  std::cout << "    check track states in group 0; T1, T3, T5 are in group 0" << std::endl;
+  DisplayTrackMuted(tm);
+  DisplayTrackInPlayback(tm);
+  DisplayTrackOff(tm);
+  DisplayTrackInRecord(tm);
+
+  // G0 T1,3,5
+  // G1 T2, 4 6
+  std::cout << "    set all tracks to play in group 0" << std::endl;
+  tm.SetTrackStatePlayback(1);
+  tm.SetTrackStatePlayback(3);
+  tm.SetTrackStatePlayback(5);
+
+  DisplayTrackMuted(tm);
+  DisplayTrackInPlayback(tm);
+  DisplayTrackOff(tm);
+  DisplayTrackInRecord(tm);
+
+  std::cout << "    change to group 1; T2, T4, T6 are in group 1" << std::endl;
+  gm.HandleDownEvent(tm, 1, 0);
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+  result = gm.GetActiveGroup() == 1;
+  if (!result) {
+    std::cout << "error: active group is not " << 1 << std::endl;
+    return result;
+  }
+  DisplayTrackMuted(tm);
+  DisplayTrackInPlayback(tm);
+  DisplayTrackOff(tm);
+  DisplayTrackInRecord(tm);
+  std::cout << "    set all tracks to play in group 1" << std::endl;
+  tm.SetTrackStatePlayback(2);
+  tm.SetTrackStatePlayback(4);
+  tm.SetTrackStatePlayback(6);
+
+  DisplayTrackMuted(tm);
+  DisplayTrackInPlayback(tm);
+  DisplayTrackOff(tm);
+  DisplayTrackInRecord(tm);
+
+  std::cout << "    switch back to group 0" << std::endl;
+  gm.HandleDownEvent(tm, 0, 0);
+  // verify in Acive Group
+  std::cout << "    verify Active Group" << std::endl;
+  result =  gm.GetActiveGroup() == 0;
+  if (!result) {
+    std::cout << "error: active group is not " << 0 << std::endl;
+    return result;
+  }
+  std::cout << "    verify state is active" << std::endl;
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+  DisplayTrackMuted(tm);
+  DisplayTrackInPlayback(tm);
+  DisplayTrackOff(tm);
+  DisplayTrackInRecord(tm);
+
+  std::cout << "    set T1 to record" << std::endl;
+  tm.SetTrackStateRecord(1);
+  DisplayTrackMuted(tm);
+  DisplayTrackInPlayback(tm);
+  DisplayTrackOff(tm);
+  DisplayTrackInRecord(tm);
+
+  std::cout << "    swap to group 1 T2,T4,T6" << std::endl;
+  gm.HandleDownEvent(tm, 1, 0);
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+  result = gm.GetActiveGroup() == 1;
+  if (!result) {
+    std::cout << "error: active group is not " << 1 << std::endl;
+    return result;
+  }
+
+  DisplayTrackMuted(tm);
+  DisplayTrackInPlayback(tm);
+  DisplayTrackOff(tm);
+  DisplayTrackInRecord(tm);
+
+  std::cout << "    swap back to group 0 T1,T3,T5" << std::endl;
+  gm.HandleDownEvent(tm, 0, 0);
+  // verify in Acive Group
+  std::cout << "    verify Active Group" << std::endl;
+  result =  gm.GetActiveGroup() == 0;
+  if (!result) {
+    std::cout << "error: active group is not " << 0 << std::endl;
+    return result;
+  }
+  std::cout << "    verify state is active" << std::endl;
+  result = gm.IsStateActive();
+  if (!result) {
+    std::cout << "error: group manager not in active state" << std::endl;
+    return result;
+  }
+  DisplayTrackMuted(tm);
+  DisplayTrackInPlayback(tm);
+  DisplayTrackOff(tm);
+  DisplayTrackInRecord(tm);
 
 
   return result;
@@ -314,10 +535,19 @@ int main() {
   std::cout << "** test_group_manager.cpp **" << std::endl;
   GroupManager gm;
 
-  bool test = Test_AddTracksToGroups(gm, tm);
+  bool test = Test_SelectGroups(gm, tm);
   if (!test) {
     std::cout << "--> TEST FAILED" << std::endl;
   }
+  test = Test_AddTracksToGroups(gm, tm);
+  if (!test) {
+    std::cout << "--> TEST FAILED" << std::endl;
+  }
+  test = Test_CheckTrackStateSwappingGroup_AllPlay(gm, tm);
+  if (!test) {
+    std::cout << "--> TEST FAILED" << std::endl;
+  }
+
 #if 0
   Test_RemoveTracksFromGroups(gm, tm);
   Test_ChangeActiveGroups(gm, tm);

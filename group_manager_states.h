@@ -76,11 +76,11 @@ class AddTrack : public GroupManagerState {
 };
 
 // Last event received was a play event
-class RemoveAllTracks : public GroupManagerState {
+class RemoveTracks : public GroupManagerState {
   private:
-  RemoveAllTracks() {};
-  RemoveAllTracks(const Active& other);
-  RemoveAllTracks& operator=(const Active& other);
+  RemoveTracks() {};
+  RemoveTracks(const Active& other);
+  RemoveTracks& operator=(const Active& other);
 
   public:
   // State Specific Methods
@@ -94,7 +94,7 @@ class RemoveAllTracks : public GroupManagerState {
   void handle_short_pulse_event(GroupManager &gm, TrackManager &tm, uint32_t group_number, uint32_t track_number);
   void handle_long_pulse_event(GroupManager &gm, TrackManager &tm, uint32_t group_number, uint32_t track_number);
 
-  static RemoveAllTracks& getInstance();
+  static RemoveTracks& getInstance();
 };
 
 #endif // GROUP_MANAGER_STATES_H

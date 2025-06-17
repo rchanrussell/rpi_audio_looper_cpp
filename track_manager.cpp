@@ -1,3 +1,4 @@
+#include <thread>
 #include "track_manager.h"
 #include "track_manager_states.h"
 
@@ -316,27 +317,47 @@ void TrackManager::IndexUpdateAllStatesNoChange() {
  * Set Track State Handlers
  */
 void TrackManager::SetTrackStateOff(uint32_t track_number) {
+  auto th_id = std::this_thread::get_id();
+  std::cout << "TM TSTSO ID, "<< th_id << std::endl;
   tracks.at(track_number).SetTrackToOff();
+  if (output_i2c != nullptr) {
+    output_i2c->SignalTrackOff(track_number);
+  }
 }
 
 void TrackManager::SetTrackStateRecord(uint32_t track_number) {
   tracks.at(track_number).SetTrackToInRecord();
+  if (output_i2c != nullptr) {
+    output_i2c->SignalTrackRecording(track_number);
+  }
 }
 
 void TrackManager::SetTrackStateOverdub(uint32_t track_number) {
   tracks.at(track_number).SetTrackToOverdubbing();
+  if (output_i2c != nullptr) {
+    output_i2c->SignalTrackRecording(track_number);
+  }
 }
 
 void TrackManager::SetTrackStatePlayback(uint32_t track_number) {
   tracks.at(track_number).SetTrackToInPlayback();
+  if (output_i2c != nullptr) {
+    output_i2c->SignalTrackPlayback(track_number);
+  }
 }
 
 void TrackManager::SetTrackStateRepeat(uint32_t track_number) {
   tracks.at(track_number).SetTrackToInPlaybackRepeat();
+  if (output_i2c != nullptr) {
+    output_i2c->SignalTrackPlayback(track_number);
+  }
 }
 
 void TrackManager::SetTrackStateMute(uint32_t track_number) {
   tracks.at(track_number).SetTrackToMuted();
+  if (output_i2c != nullptr) {
+    output_i2c->SignalTrackMuted(track_number);
+  }
 }
 
 
@@ -470,6 +491,11 @@ void TrackManager::HandleMuteUnmuteTracks(uint16_t tracks_to_mute_unmute) {
       // if already muted, don't mute again, as this will make restoring impossible
       // this will prevent consecutive muted groups from destroying record of last unmuted group
       if (!tracks.at(track_number).IsTrackMuted()) {
+        if (tracks.at(track_number).IsTrackInRecord()) {
+          // do proper state change - rec to play just like rec on diff track while rec on orig track
+	  // simulate a down event which will transition from record to playback
+	  HandleDownEvent(track_number);
+	}
         tracks.at(track_number).SaveCurrentState();
       }
       tracks.at(track_number).SetTrackToMuted();
@@ -611,5 +637,39 @@ bool TrackManager::AreAllTracksOff() {
   master_current_index_ = 0;
   master_end_index_ = 0;
   return true;
+}
+
+void TrackManager::SetOutputI2CPtr(OutputI2C* obj) {
+  output_i2c = obj;
+}
+
+uint16_t TrackManager::GetTracksInMute() {
+  uint16_t muted = 0;
+  for (uint8_t t = 0; t < MAX_TRACK_COUNT; t++) {
+    if (tracks.at(t).IsTrackMuted()) {
+      muted |= 0x1 << t;
+    }
+  }
+  return muted;
+}
+
+uint16_t TrackManager::GetTracksInPlayback() {
+  uint16_t play = 0;
+  for (uint8_t t = 0; t < MAX_TRACK_COUNT; t++) {
+    if (tracks.at(t).IsTrackInPlayback() || tracks.at(t).IsTrackInPlaybackRepeat()) {
+      play |= 0x1 << t;
+    }
+  }
+  return play;
+}
+
+uint16_t TrackManager::GetTracksOff() {
+  uint16_t off = 0;
+  for (uint8_t t = 0; t < MAX_TRACK_COUNT; t++) {
+    if (tracks.at(t).IsTrackOff()) {
+      off |= 0x1 << t;
+    }
+  }
+  return off;
 }
 
