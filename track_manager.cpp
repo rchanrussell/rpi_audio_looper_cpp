@@ -557,7 +557,18 @@ void TrackManager::SetState(TrackManagerState &new_state, uint32_t track_number)
  */
 
 void TrackManager::CopyBufferToTrack(uint32_t track_number) {
+  // record - overwrite data
+  if (tracks.at(track_number).IsTrackInRecord()) {
   tracks.at(track_number).SetBlockData(tracks.at(track_number).GetCurrentIndex(), input_buffer_);
+  }
+  if (tracks.at(track_number).IsTrackOverdubbing()) {
+  // overdub - mix
+    DataBlock overdub(0);
+    MixBlocks(tracks.at(track_number).GetBlockData(tracks.at(track_number).GetCurrentIndex()),
+              input_buffer_,
+	      overdub);
+    tracks.at(track_number).SetBlockData(tracks.at(track_number).GetCurrentIndex(), overdub);
+  }    
 }
 
 void TrackManager::CopyToInputBuffer(void *d, uint32_t nsamples) {

@@ -56,7 +56,6 @@ class GroupManager {
   // Local storage only - meant for configuration
   void AddTrackToGroup(uint32_t track_number, uint8_t group_number);
   void RemoveTrackFromGroup(uint32_t track_number, uint8_t group_number);
-  void SetActiveGroupToPlay(TrackManager &tm);
 #ifdef DTEST_GM
   void SetGroupMasterEndIndex(uint32_t end, uint8_t group_number);
 #endif

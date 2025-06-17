@@ -45,33 +45,6 @@ void GroupManager::SetGroupMasterEndIndex(uint32_t end, uint8_t group_number) {
 }
 #endif
 
-//TODO not used - why exist?
-void GroupManager::SetActiveGroupToPlay(TrackManager &tm) {
-  int8_t group_index = 0;
-  for (auto &g : groups) {
-    if (group_index == active_group) {
-#ifdef DTEST_VERBOSE_GM
-      std::cout << "GM::SAGTP - grp == active_group: " << unsigned(group_index) << std::endl;
-      std::cout << std::hex << "0x" << g << std::endl;
-#endif
-      for (uint8_t track_index = 0; track_index < MAX_TRACK_COUNT; track_index++) {
-        if (0x1 << track_index & g) {
-          // track is member of group -- set it to play
-#ifdef DTEST_VERBOSE_GM
-          std::cout << "set to play " << unsigned(track_index) << ",";
-#endif
-          // Don't force to playback, what if was off?
-          tm.HandleStateChange_Playback(track_index);
-        }
-      }
-    }
-    group_index++;
-  }
-#ifdef DTEST_VERBOSE_GM
-  std::cout << std::endl;
-#endif
-}
-
 // Don't turn off LEDs here, as this is intended to be a same group active -> not active
 // transition for a pause in the audio, not hiding which tracks are members of the
 // active group
