@@ -74,6 +74,9 @@ int AudioJack::Process(jack_nframes_t nframes, void *arg) {
     pv->track_manager_left_->CopyToInputBuffer(in1, SAMPLES_PER_BLOCK);
     pv->track_manager_left_->StateProcess(pv->gpio_->GetLastTrack()); // copies buffer to track, performs mixdown and updates indicies
     pv->track_manager_left_->CopyMixdownToBuffer(out1, nframes);
+    if (pv->track_manager_right_ == nullptr) {
+      pv->track_manager_left_->CopyMixdownToBuffer(out2, nframes);
+    }
   }
   if (pv->track_manager_right_ == nullptr) {
 #ifdef JACK_VERBOSE
