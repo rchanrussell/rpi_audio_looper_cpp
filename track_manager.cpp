@@ -572,7 +572,7 @@ void TrackManager::CopyBufferToTrack(uint32_t track_number) {
 }
 
 void TrackManager::CopyToInputBuffer(void *d, uint32_t nsamples) {
-  int *data = (int *)d;
+  float *data = (float *)d;
   if (nsamples > SAMPLES_PER_BLOCK) {
     std::copy(data, data + SAMPLES_PER_BLOCK, begin(input_buffer_.samples_));
   } else {
@@ -581,7 +581,7 @@ void TrackManager::CopyToInputBuffer(void *d, uint32_t nsamples) {
 }
 
 void TrackManager::CopyMixdownToBuffer(void *d, uint32_t nsamples) {
-  int *data = (int *)d;
+  float *data = (float *)d;
   if (nsamples > SAMPLES_PER_BLOCK) {
     std::copy(begin(mixdown.samples_), end(mixdown.samples_), data);
   } else {
