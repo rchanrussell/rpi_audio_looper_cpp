@@ -506,9 +506,9 @@ bool InputGpio::LastEventWasForTrack() {
 }
 
 int InputGpio::GetLastTrack() {
-  return last_track;
+  return last_track < 0 ? 0 : last_track;
 }
 
 int InputGpio::GetLastGroup() {
-  return last_group;
+  return last_group < 0 ? 0 : last_group;
 }

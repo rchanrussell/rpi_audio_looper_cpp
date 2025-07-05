@@ -16,18 +16,28 @@ struct WiringPiToGpioHeaderPin {
 // Keep this only for track inputs!
 std::vector<struct WiringPiToGpioHeaderPin> track_to_pin = {
   /* Odd Header Pins */
+  {13, 21}, {14, 23}, {30, 27}, {21, 29},
+  {25, 37}, {24, 35}, {23, 33}, {22, 31},
+  {0, 11},  {2, 13},  {3, 15},  {12, 19},
+  {16, 10}, {1, 12},  {4, 16},  {5, 18}
+#if 0
   {0, 11},  {2, 13},  {3, 15},  {12, 19},
   {13, 21}, {14, 23}, {30, 27}, {21, 29},
   {22, 31}, {23, 33}, {24, 35}, {25, 37},
   /* Even Header Pins */
   {15, 8},  {16, 10}, {1, 12},  {4, 16}
+#endif
 };
 
 // Set this in order - first entry is group 0
 // second entry is group 1 etc..
 std::vector<struct WiringPiToGpioHeaderPin> group_to_pin = {
-  {5, 18},  {6, 22},  {10, 24}, {11, 26},
-  {31, 28}, {26, 32}, {27, 36}, {28, 38},
+  {29, 40}, {28, 38}, {27, 36}, {26, 32},
+  {6, 22},  {10, 24}, {11, 26}, {31, 28}
+#if 0
+      	{5, 18},  {6, 22},  {10, 24}, {11, 26},
+  {31, 28}, {26, 32}, {27, 36}, {28, 38}
+#endif
 };
 
 // Simple map for LED access using SDA/SCL

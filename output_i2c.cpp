@@ -38,28 +38,29 @@ std::vector<uint8_t> i2c_sx1509_led_intensity = {
 };
 
 OutputI2C::OutputI2C() {
-  i2c_dev0_fd = -1;
-  i2c_dev1_fd = -1;
-  i2c_dev2_fd = -1;
+  i2c_red_fd = -1;
+  i2c_green_fd = -1;
+  i2c_yellow_fd = -1;
   i2c_dev3_fd = -1;
 }
 
 bool OutputI2C::InitializeWiringPiI2C() {
-  i2c_dev0_fd = wiringPiI2CSetup(EXP0_ADDR);
-  if (i2c_dev0_fd < 0){
-    std::cout << "Error, device does not exist" << std::endl;
-  }
-#if 0 // wait until the expanders are connected
-  i2c_dev1_fd = wiringPiI2CSetup(EXP1_ADDR);
-  if (i2c_dev1_fd < 0){
+  i2c_red_fd = wiringPiI2CSetup(EXP0_ADDR);
+  if (i2c_red_fd < 0){
     std::cout << "Error, device does not exist" << std::endl;
   }
 
-  i2c_dev2_fd = wiringPiI2CSetup(EXP2_ADDR);
-  if (i2c_dev2_fd < 0){
+  i2c_green_fd = wiringPiI2CSetup(EXP1_ADDR);
+  if (i2c_green_fd < 0){
     std::cout << "Error, device does not exist" << std::endl;
   }
 
+  i2c_yellow_fd = wiringPiI2CSetup(EXP2_ADDR);
+  if (i2c_yellow_fd < 0){
+    std::cout << "Error, device does not exist" << std::endl;
+  }
+
+#if 0
   i2c_dev3_fd = wiringPiI2CSetup(EXP3_ADDR);
   if (i2c_dev3_fd < 0){
     std::cout << "Error, device does not exist" << std::endl;
@@ -68,8 +69,8 @@ bool OutputI2C::InitializeWiringPiI2C() {
 
   bool at_least_one_dev = false;
   std::cout << "Initializing expander at " << std::hex << EXP0_ADDR << std::endl;
-  if (i2c_dev0_fd >= 0) {
-    if (!InitializeExpander(i2c_dev0_fd)) {
+  if (i2c_red_fd >= 0) {
+    if (!InitializeExpander(i2c_red_fd)) {
       std::cout << "Error: failed to initialize device" << std::endl;
     } else {
       at_least_one_dev = true;
@@ -77,8 +78,8 @@ bool OutputI2C::InitializeWiringPiI2C() {
   }
 
   std::cout << "Initializing expander at " << std::hex << EXP1_ADDR << std::endl;
-  if (i2c_dev1_fd >= 0) {
-    if (!InitializeExpander(i2c_dev1_fd)) {
+  if (i2c_green_fd >= 0) {
+    if (!InitializeExpander(i2c_green_fd)) {
       std::cout << "Error: failed to initialize device" << std::endl;
     } else {
       at_least_one_dev = true;
@@ -86,8 +87,8 @@ bool OutputI2C::InitializeWiringPiI2C() {
   }
 
   std::cout << "Initializing expander at " << std::hex << EXP2_ADDR << std::endl;
-  if (i2c_dev2_fd >= 0) {
-    if (!InitializeExpander(i2c_dev2_fd)) {
+  if (i2c_yellow_fd >= 0) {
+    if (!InitializeExpander(i2c_yellow_fd)) {
       std::cout << "Error: failed to initialize device" << std::endl;
     } else {
       at_least_one_dev = true;
@@ -109,7 +110,7 @@ bool OutputI2C::InitializeWiringPiI2C() {
 // Call for each device, using it's own file descriptor
 bool OutputI2C::InitializeExpander(int fd) {
   std::cout << "IE " << std::endl;
-  for (uint8_t idx = 0; idx < i2c_sx1509_led_config.size(); idx++) { 
+  for (uint32_t idx = 0; idx < i2c_sx1509_led_config.size(); idx++) { 
     if (wiringPiI2CWriteReg16(fd,
                              i2c_sx1509_led_config.at(idx).addr,
                              i2c_sx1509_led_config.at(idx).value) < 0) {
@@ -243,135 +244,52 @@ bool OutputI2C::SetLEDBlink(int fd, uint16_t led) {
   return SetLEDIntensity(fd, led, true);
 }
 
-void OutputI2C::SignalRecord(int fd, uint32_t track) {
-  if (track == 15) {
-    SetLEDOn(i2c_dev0_fd, 15);
-    SetLEDOff(i2c_dev1_fd, 15);
-  } else {
-    uint16_t led = track * LEDS_PER_TRACK;
-    if (led >= 15 && led < 30) { led -= 15; }
-    if (led >= 30) { led -= 30; }
-    SetLEDOn(fd, led);
-    SetLEDOff(fd, led + 1);
-  }
+void OutputI2C::SignalRecord(uint32_t track) {
+  SetLEDOff(i2c_green_fd, track);
+  SetLEDOn(i2c_red_fd, track);
 }
 
-void OutputI2C::SignalPlayback(int fd, uint32_t track) {
-  if (track == 15) {
-    SetLEDOff(i2c_dev0_fd, 15);
-    SetLEDOn(i2c_dev1_fd, 15);
-  } else {
-    uint16_t led = track * LEDS_PER_TRACK;
-    if (led >= 15 && led < 30) { led -= 15; }
-    if (led >= 30) { led -= 30; }
-    SetLEDOff(fd, led);
-    SetLEDOn(fd, led + 1);
-  }
+void OutputI2C::SignalPlayback(uint32_t track) {
+  SetLEDOff(i2c_red_fd, track);
+  SetLEDOn(i2c_green_fd, track);
 }
 
-void OutputI2C::SignalMuted(int fd, uint32_t track) {
-  if (track == 15) {
-    SetLEDOff(i2c_dev0_fd, 15);
-    SetLEDBlink(i2c_dev1_fd, 15);
-  } else {
-    uint16_t led = track * LEDS_PER_TRACK;
-    if (led >= 15 && led < 30) { led -= 15; }
-    if (led >= 30) { led -= 30; }
-    SetLEDOff(fd, led);
-    SetLEDBlink(fd, led + 1);
-  }
+void OutputI2C::SignalMuted(uint32_t track) {
+  SetLEDOff(i2c_red_fd, track);
+  SetLEDBlink(i2c_green_fd, track);
 }
 
-void OutputI2C::SignalOff(int fd, uint32_t track) {
-  if (track == 15) {
-    SetLEDOff(i2c_dev0_fd, 15);
-    SetLEDOff(i2c_dev1_fd, 15);
-  } else {
-    uint16_t led = track * LEDS_PER_TRACK;
-    if (led >= 15 && led < 30) { led -= 15; }
-    if (led >= 30) { led -= 30; }
-    SetLEDOff(fd, led);
-    SetLEDOff(fd, led + 1);
-  }
+void OutputI2C::SignalOff(uint32_t track) {
+  SetLEDOff(i2c_red_fd, track);
+  SetLEDOff(i2c_green_fd, track);
 }
 
-void OutputI2C::SignalInGroup(int fd, uint32_t track) {
-  if (track == 15) {
-    SetLEDOn(i2c_dev2_fd, track);
-  } else {
-    uint16_t led = track * LEDS_PER_TRACK;
-    if (led >= 15 && led < 30) { led -= 15; }
-    if (led >= 30) { led -= 30; }
-    SetLEDOn(fd, led + 2);
-  }
+void OutputI2C::SignalInGroup(uint32_t track) {
+  SetLEDOn(i2c_yellow_fd, track);
 }
 
-void OutputI2C::SignalNotInGroup(int fd, uint32_t track) {
-  if (track == 15) {
-    SetLEDOff(i2c_dev2_fd, track);
-  } else {
-    uint16_t led = track * LEDS_PER_TRACK;
-    // 5 tracks per expander, 15 LEDs per expander except track 15
-    if (led >= 15 && led < 30) { led -= 15; }
-    if (led >= 30) { led -= 30; }
-    SetLEDOff(fd, led + 2);
-  }
+void OutputI2C::SignalNotInGroup(uint32_t track) {
+  SetLEDOff(i2c_yellow_fd, track);
 }
 
 // Make these threads and run and die
-// Update to select fd based upon range of track:
-// 3 LED per track
-// Dev0 0:2 - track 0
-// Dev0 3:5 - track 1
-// Dev0 6:8 - track 2
-// Dev0 9:11 - track 3
-// Dev0 12:14 - track 4
-// Dev0 15 - track 15 red
-//
-// Dev1 0:2 - track 5
-// Dev1 3:5 - track 6
-// Dev1 6:8 - track 7
-// Dev1 9:11 - track 8
-// Dev1 12:14 - track 9
-// Dev1 15 - track 15 green
-//
-// Dev2 0:2 - track 10
-// Dev2 3:5 - track 11
-// Dev2 6:8 - track 12
-// Dev2 9:11 - track 13
-// Dev2 12:14 - track 14
-// Dev2 15 - track 15 yellow
-//
-// groups 0-7 occupy dev3 - maybe
-
-int OutputI2C::TrackToDevFd(uint32_t track) {
-  if (track < 5) {
-    return i2c_dev0_fd;
-  } else if (track >= 5 && track < 10) {
-    return i2c_dev1_fd;
-  } else if (track >= 10 && track < 15) {
-    return i2c_dev2_fd;
-  } else {
-    return -1;
-  }
-}
 void OutputI2C::SignalTrackRecording(uint32_t track) {
-  std::thread t(&OutputI2C::SignalRecord, this, TrackToDevFd(track), track);
+  std::thread t(&OutputI2C::SignalRecord, this, track);
   t.detach();
 }
 // solid green only - playback and repeat
 void OutputI2C::SignalTrackPlayback(uint32_t track) {
-  std::thread t(&OutputI2C::SignalPlayback, this, TrackToDevFd(track), track);
+  std::thread t(&OutputI2C::SignalPlayback, this, track);
   t.detach();
 }
 // blink green only - don't set when switching groups
 void OutputI2C::SignalTrackMuted(uint32_t track) {
-  std::thread t(&OutputI2C::SignalMuted, this, TrackToDevFd(track), track);
+  std::thread t(&OutputI2C::SignalMuted, this, track);
   t.detach();
 }
 // turn off LEDs - off state or not member of active group
 void OutputI2C::SignalTrackOff(uint32_t track) {
-  std::thread t(&OutputI2C::SignalOff, this, TrackToDevFd(track), track);
+  std::thread t(&OutputI2C::SignalOff, this, track);
   t.detach();
 }
 // b - turn off all LEDs first then on bits set in tracks
@@ -384,58 +302,47 @@ void OutputI2C::SignalTracksInGroupThread(
      uint16_t tracks_in_playback,
      uint16_t tracks_in_mute,
      uint16_t tracks_off) {
+  std::cout << "I2C:SGIGT:" << std::hex << tracks_in_group << "," << tracks_in_playback << "," << tracks_in_mute << "," << tracks_off << std::endl;
+
   // clear all track LED's other than group
   for (uint32_t bit = 0; bit < 16; bit++) {
-    SignalOff(TrackToDevFd(bit), bit);
+    SignalOff(bit);
   }
+
   // Signal members of group
-  for (uint32_t bit = 0; bit < 15; bit++) {
-    if (tracks_in_group & (0x1 << bit)) {
-      SignalInGroup(TrackToDevFd(bit), bit);
-    } else {
-      SignalNotInGroup(TrackToDevFd(bit), bit);
-    }
+  // Some strange bug/feature - all off first then on members
+  for (uint32_t bit = 0; bit < 16; bit++) {
+    SignalNotInGroup(bit);
   }
-  if (tracks_in_group & (0x1 << 15)) {
-    SignalInGroup(TrackToDevFd(15), 15);
-  } else {
-    SignalNotInGroup(TrackToDevFd(15), 15);
+
+  for (uint32_t bit = 0; bit < 16; bit++) {
+    if (tracks_in_group & (0x1 << bit)) {
+      SignalInGroup(bit);
+    }
   }
 
   // Signal tracks in playback if members of group
-  for (uint32_t bit = 0; bit < 15; bit++) {
+  for (uint32_t bit = 0; bit < 16; bit++) {
     if (tracks_in_playback & (0x1 << bit) &&
 	tracks_in_group & (0x1 << bit)) {
-      SignalPlayback(TrackToDevFd(bit), bit);
+      SignalPlayback(bit);
     } 
-  }
-  if (tracks_in_playback & (0x1 << 15) &&
-      tracks_in_group & (0x1 << 15)) {
-    SignalPlayback(TrackToDevFd(15), 15);
   }
 
   // Signal tracks in mute if members of group
-  for (uint32_t bit = 0; bit < 15; bit++) {
+  for (uint32_t bit = 0; bit < 16; bit++) {
     if (tracks_in_mute & (0x1 << bit) &&
 	tracks_in_group & (0x1 << bit)) {
-      SignalMuted(TrackToDevFd(bit), bit);
+      SignalMuted(bit);
     } 
-  }
-  if (tracks_in_mute & (0x1 << 15) &&
-      tracks_in_group & (0x1 << 15)) {
-    SignalMuted(TrackToDevFd(15), 15);
   }
 
   // Signal tracks off if members of group
-  for (uint32_t bit = 0; bit < 15; bit++) {
+  for (uint32_t bit = 0; bit < 16; bit++) {
     if (tracks_off & (0x1 << bit) &&
 	tracks_in_group & (0x1 << bit)) {
-      SignalOff(TrackToDevFd(bit), bit);
+      SignalOff(bit);
     } 
-  }
-  if (tracks_off & (0x1 << 15) &&
-      tracks_in_group & (0x1 << 15)) {
-    SignalOff(TrackToDevFd(15), 15);
   }
 
 }

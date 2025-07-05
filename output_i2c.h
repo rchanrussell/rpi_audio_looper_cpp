@@ -5,15 +5,15 @@
 
 #define EXP0_ADDR 0x3E
 #define EXP1_ADDR 0x3F
-#define EXP2_ADDR 0x40
-#define EXP3_ADDR 0x41
+#define EXP2_ADDR 0x70
+#define EXP3_ADDR 0x71
 #define LEDS_PER_TRACK 3
 
 class OutputI2C {
   // Variables
-  int i2c_dev0_fd;
-  int i2c_dev1_fd;
-  int i2c_dev2_fd;
+  int i2c_red_fd;
+  int i2c_green_fd;
+  int i2c_yellow_fd;
   int i2c_dev3_fd;
 
   // Methods
@@ -26,12 +26,12 @@ class OutputI2C {
   int TrackToDevFd(uint32_t track);
 
   // detached threads
-  void SignalRecord(int fd, uint32_t track);
-  void SignalPlayback(int fd, uint32_t track);
-  void SignalMuted(int fd, uint32_t track);
-  void SignalOff(int fd, uint32_t track);
-  void SignalInGroup(int fd, uint32_t track);
-  void SignalNotInGroup(int fd, uint32_t track);
+  void SignalRecord(uint32_t track);
+  void SignalPlayback(uint32_t track);
+  void SignalMuted(uint32_t track);
+  void SignalOff(uint32_t track);
+  void SignalInGroup(uint32_t track);
+  void SignalNotInGroup(uint32_t track);
   void SignalTracksInGroupThread(
        uint16_t tracks_in_group,
        uint16_t tracks_in_playback,
