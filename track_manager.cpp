@@ -36,7 +36,6 @@ void TrackManager::SilentPlaybackTrack(uint32_t track, uint32_t index) {
 void TrackManager::PerformMixdown() {
   uint32_t index_one = 0;
   uint32_t index_two = 0;
-
   // Clear mixdown as MixBlocks does not do this and shouldn't for simplicity
   mixdown.SetData(empty_block);
 
@@ -317,8 +316,6 @@ void TrackManager::IndexUpdateAllStatesNoChange() {
  * Set Track State Handlers
  */
 void TrackManager::SetTrackStateOff(uint32_t track_number) {
-  auto th_id = std::this_thread::get_id();
-  std::cout << "TM TSTSO ID, "<< th_id << std::endl;
   tracks.at(track_number).SetTrackToOff();
   if (output_i2c != nullptr) {
     output_i2c->SignalTrackOff(track_number);
@@ -519,6 +516,7 @@ void TrackManager::SyncTrackManagerStateWithTrackState(uint32_t track_number) {
       tracks.at(last_track_number_).IsTrackInRecord()) {
       SetState(Play::getInstance(), last_track_number_);
   }
+
   if (tracks.at(track_number).IsTrackOff()) {
     current_state = &Off::getInstance();
     return;
@@ -607,6 +605,7 @@ void TrackManager::CopyMixdownToBuffer(void *d, uint32_t nsamples) {
 
 void TrackManager::HandleDownEvent(uint32_t track_number) {
   // sync with track
+std::cout << "TM:HDE ltn:" << last_track_number_ << ", t:" << track_number << std::endl;
   SyncTrackManagerStateWithTrackState(track_number);
   current_state->DownEvent(*this, track_number);
   last_track_number_ = track_number;
@@ -634,13 +633,28 @@ void TrackManager::HandleLongPulseEvent(uint32_t track_number) {
 }
 
 void TrackManager::StateProcess(uint32_t track_number) {
-  SyncTrackManagerStateWithTrackState(track_number);
   current_state->Active(*this, track_number);
 }
 
-bool TrackManager::AreAllTracksOff() {
+// if track was set to off, ensure master indicies are update
+// if off track was longer than other, update master's end index to next
+// largest end index
+void TrackManager::UpdateMasterEndIndex() {
+  uint32_t new_max = 0;
   for (auto &t : tracks) {
-    if (!t.IsTrackOff()) {
+    if (t.GetEndIndex() >= new_max) {
+      new_max = t.GetEndIndex();
+    }
+  }
+  master_end_index_ = new_max;
+  if (master_current_index_ > master_end_index_) {
+    master_current_index_ = master_end_index_;
+  }
+}
+
+bool TrackManager::AreAllTracksOff(bool force_reset) {
+ for (auto &t : tracks) {
+    if (!t.IsTrackOff() && !force_reset) {
       return false;
     }
   }

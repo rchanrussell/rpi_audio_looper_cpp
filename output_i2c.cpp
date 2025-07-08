@@ -32,10 +32,110 @@ std::vector<uint8_t> i2c_sx1509_led_toff = {
   0x2B, 0x2E, 0x31, 0x34, 0x37, 0x3C, 0x41, 0x46,
   0x4B, 0x4E, 0x51, 0x54, 0x57, 0x5C, 0x61, 0x66
 };
+
 std::vector<uint8_t> i2c_sx1509_led_intensity = {
   0x2A, 0x2D, 0x30, 0x33, 0x36, 0x3B, 0x40, 0x45,
   0x4A, 0x4D, 0x50, 0x53, 0x56, 0x5B, 0x60, 0x65
 };
+
+//  Commands
+#define HT16K33_ON              0x21  //  0 = off   1 = on
+#define HT16K33_STANDBY         0x20  //  bit xxxxxxx0
+
+
+//  bit pattern 1000 0xxy
+//  y    =  display on / off
+//  xx   =  00=off     01=2Hz     10 = 1Hz     11 = 0.5Hz
+#define HT16K33_DISPLAYON       0x81
+#define HT16K33_DISPLAYOFF      0x80
+#define HT16K33_BLINKON0_5HZ    0x87
+#define HT16K33_BLINKON1HZ      0x85
+#define HT16K33_BLINKON2HZ      0x83
+#define HT16K33_BLINKOFF        0x81
+#define HT16K33_BRIGHTNESS	0xE0
+// Supported Characters
+#define HT16K33_0                0
+#define HT16K33_1                1
+#define HT16K33_2                2
+#define HT16K33_3                3
+#define HT16K33_4                4
+#define HT16K33_5                5
+#define HT16K33_6                6
+#define HT16K33_7                7
+#define HT16K33_8                8
+#define HT16K33_9                9
+#define HT16K33_A                10
+#define HT16K33_B                11
+#define HT16K33_C                12
+#define HT16K33_D                13
+#define HT16K33_E                14
+#define HT16K33_F                15
+#define HT16K33_SPACE            16
+#define HT16K33_MINUS            17
+#define HT16K33_TOP_C            18     //  c
+#define HT16K33_DEGREE           19     //  °
+#define HT16K33_NONE             99
+
+
+static const uint8_t charmap[] = { 
+
+  0x3F,   //  0
+  0x06,   //  1
+  0x5B,   //  2
+  0x4F,   //  3
+  0x66,   //  4
+  0x6D,   //  5
+  0x7D,   //  6
+  0x07,   //  7
+  0x7F,   //  8
+  0x6F,   //  9
+  0x77,   //  A
+  0x7C,   //  B
+  0x39,   //  C
+  0x5E,   //  D
+  0x79,   //  E
+  0x71,   //  F
+  0x00,   //  space
+  0x40,   //  minus
+  0x61,   //  TOP_C
+  0x63,   //  degree °
+};
+static void displayOn(int fd) {
+  int err = 0;
+  err = wiringPiI2CWrite(fd, HT16K33_ON);
+  if (err < 0) {std::cout << "err:" << err << std::endl;}
+  wiringPiI2CWrite(fd, HT16K33_DISPLAYON);
+  wiringPiI2CWrite(fd, HT16K33_BRIGHTNESS | 0x0F);
+}
+/*
+static void displayOff(int fd)
+{
+  wiringPiI2CWrite(fd, HT16K33_DISPLAYOFF);
+  wiringPiI2CWrite(fd, HT16K33_STANDBY);
+}
+*/
+static void writePos(int fd, uint8_t pos, uint8_t mask)
+{
+  wiringPiI2CWriteReg8(fd, pos * 2, mask);
+}
+static void displayClear(int fd) {
+  for (int i = 0; i < 4; i++) {
+    writePos(fd, i, HT16K33_SPACE);
+  }
+}
+static void display(int fd, uint8_t *array)
+{
+  for (uint8_t i = 0; i < 4; i++)
+  {
+    if (array[i] != 0) break;
+    array[i] = HT16K33_SPACE;
+  }
+  writePos(fd, 0, charmap[array[0]]);
+  writePos(fd, 1, charmap[array[1]]);
+  writePos(fd, 3, charmap[array[2]]);
+  writePos(fd, 4, charmap[array[3]]);
+}
+
 
 OutputI2C::OutputI2C() {
   i2c_red_fd = -1;
@@ -60,12 +160,10 @@ bool OutputI2C::InitializeWiringPiI2C() {
     std::cout << "Error, device does not exist" << std::endl;
   }
 
-#if 0
   i2c_dev3_fd = wiringPiI2CSetup(EXP3_ADDR);
   if (i2c_dev3_fd < 0){
     std::cout << "Error, device does not exist" << std::endl;
   }
-#endif
 
   bool at_least_one_dev = false;
   std::cout << "Initializing expander at " << std::hex << EXP0_ADDR << std::endl;
@@ -95,13 +193,12 @@ bool OutputI2C::InitializeWiringPiI2C() {
     }
   }
 
-  std::cout << "Initializing expander at " << std::hex << EXP3_ADDR << std::endl;
+  std::cout << "Initializing display at " << std::hex << EXP3_ADDR << std::endl;
   if (i2c_dev3_fd >= 0) {
-    if (!InitializeExpander(i2c_dev3_fd)) {
-      std::cout << "Error: failed to initialize device" << std::endl;
-    } else {
-      at_least_one_dev = true;
-    }
+    displayOn(i2c_dev3_fd);
+    displayClear(i2c_dev3_fd);
+    uint8_t group_display [] = {HT16K33_9, HT16K33_MINUS, HT16K33_MINUS, HT16K33_MINUS};
+    display(i2c_dev3_fd, group_display);
   }
 
   return at_least_one_dev;
@@ -114,7 +211,7 @@ bool OutputI2C::InitializeExpander(int fd) {
     if (wiringPiI2CWriteReg16(fd,
                              i2c_sx1509_led_config.at(idx).addr,
                              i2c_sx1509_led_config.at(idx).value) < 0) {
-      std::cout << "Error configuring I2C exp " << fd << ", init step " << idx << std::endl;
+      std::cout << "Error configuring I2C exp " << fd << ", init step " << std::hex << idx << std::endl;
       return false;
     }
   }
@@ -358,6 +455,56 @@ void OutputI2C::SignalTracksInGroup(
 		tracks_in_playback,
 		tracks_in_mute,
 		tracks_off);
+  t.detach();
+}
+
+void OutputI2C::SignalGroupActiveWithTrackThread(uint8_t group_number) {
+  uint8_t display_info[] = {HT16K33_9, group_number, HT16K33_SPACE, HT16K33_F};
+  display(i2c_dev3_fd, display_info);
+}
+
+void OutputI2C::SignalGroupAddTrackThread(uint8_t group_number) {
+  uint8_t display_info[] = {HT16K33_9, group_number, HT16K33_SPACE, HT16K33_A};
+  display(i2c_dev3_fd, display_info);
+}
+
+void OutputI2C::SignalGroupActiveEmptyThread(uint8_t group_number) {
+  uint8_t display_info[] = {HT16K33_9, group_number, HT16K33_SPACE, HT16K33_E};
+  display(i2c_dev3_fd, display_info);
+}
+
+void OutputI2C::SignalGroupRemoveTrackThread(uint8_t group_number) {
+  uint8_t display_info[] = {HT16K33_9, group_number, HT16K33_SPACE, HT16K33_MINUS};
+  display(i2c_dev3_fd, display_info);
+}
+
+void OutputI2C::SignalGroupInactiveThread(uint8_t group_number) {
+  uint8_t display_info[] = {HT16K33_9, group_number, HT16K33_SPACE, HT16K33_SPACE};
+  display(i2c_dev3_fd, display_info);
+}
+
+void OutputI2C::SignalGroupActiveWithTrack(uint8_t group_number) {
+  std::thread t(&OutputI2C::SignalGroupActiveWithTrackThread, this, group_number);
+  t.detach();
+}
+
+void OutputI2C::SignalGroupAddTrack(uint8_t group_number) {
+  std::thread t(&OutputI2C::SignalGroupAddTrackThread, this, group_number);
+  t.detach();
+}
+
+void OutputI2C::SignalGroupActiveEmpty(uint8_t group_number) {
+  std::thread t(&OutputI2C::SignalGroupActiveEmptyThread, this, group_number);
+  t.detach();
+}
+
+void OutputI2C::SignalGroupRemoveTrack(uint8_t group_number) {
+  std::thread t(&OutputI2C::SignalGroupRemoveTrackThread, this, group_number);
+  t.detach();
+}
+
+void OutputI2C::SignalGroupInactive(uint8_t group_number) {
+  std::thread t(&OutputI2C::SignalGroupInactiveThread, this, group_number);
   t.detach();
 }
 

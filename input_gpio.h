@@ -30,8 +30,8 @@ class InputGpio {
   volatile uint8_t processed_event_counter;
   volatile ProcessedEvent processed_event_queue[MAX_EVENT_QUEUE_SIZE];
   InputProcessedEvent last_event;
-  int last_track;
-  int last_group;
+  uint16_t last_track;
+  uint8_t last_group;
   bool last_event_for_track;
 
   // Methods

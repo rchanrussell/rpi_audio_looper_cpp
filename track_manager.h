@@ -133,10 +133,11 @@ class TrackManager {
   void SetTrackStateMute(uint32_t track_number);
 
   // Reset condition -- if all tracks are off - reset our master current and end indexes
-  bool AreAllTracksOff();
+  bool AreAllTracksOff(bool force_reset = false);
 
   // Active
   void IndexUpdateAllStatesNoChange();
+  void UpdateMasterEndIndex();
 
   // Data Transfers Copy To Track
   void CopyBufferToTrack(uint32_t track_number);

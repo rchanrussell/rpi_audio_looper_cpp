@@ -37,6 +37,11 @@ class OutputI2C {
        uint16_t tracks_in_playback,
        uint16_t tracks_in_mute,
        uint16_t tracks_off);
+  void SignalGroupActiveWithTrackThread(uint8_t group_number);
+  void SignalGroupAddTrackThread(uint8_t group_number);
+  void SignalGroupActiveEmptyThread(uint8_t group_number);
+  void SignalGroupRemoveTrackThread(uint8_t group_number);
+  void SignalGroupInactiveThread(uint8_t group_number);
 
   public:
 
@@ -56,6 +61,12 @@ class OutputI2C {
        uint16_t tracks_in_playback,
        uint16_t tracks_in_mute,
        uint16_t tracks_off);
+  void SignalGroupActiveWithTrack(uint8_t group_number);
+  void SignalGroupAddTrack(uint8_t group_number);
+  void SignalGroupActiveEmpty(uint8_t group_number);
+  void SignalGroupRemoveTrack(uint8_t group_number);
+  void SignalGroupInactive(uint8_t group_number);
+
 };
 
 #endif //OUTPUT_I2C_H

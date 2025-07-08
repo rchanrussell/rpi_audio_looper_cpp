@@ -99,6 +99,10 @@ main (int argc, char *argv[])
 	  gm.HandleLongPulseEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
         }
       }
+      if (!gm.IsGroupEmpty(gi.GetLastGroup()) && gm.AreGroupTracksOff(gi.GetLastGroup(), tm)) {
+        //tm.AreAllTracksOff(true); // force reset
+      }
+
       }
       gettimeofday(&tend, NULL);
       timersub(&tend, &tstart, &tdiff);

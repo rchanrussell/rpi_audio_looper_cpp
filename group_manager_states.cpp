@@ -11,6 +11,7 @@ void NotActive::enter(GroupManager &gm, TrackManager &tm, uint32_t group_number,
   if (gm.GetActiveGroup() == group_number) {
     gm.SilenceAllTracks(tm);
   }
+  gm.GroupInactive(group_number);
 }
 
 void NotActive::exit(GroupManager &gm, TrackManager &tm, uint32_t group_number, uint32_t track_number) {
@@ -55,6 +56,7 @@ NotActive& NotActive::getInstance() {
  */
 // State Specific Methods
 void Active::enter(GroupManager &gm, TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  gm.GroupActive(group_number);
   // User changed not active group to active state - same group
   // Unmute group's tracks but don't reset any pointers
   if (gm.GetActiveGroup() == group_number) {
@@ -115,6 +117,7 @@ Active& Active::getInstance() {
  */
 // Last event received was a overdub event - copy data from source
 void AddTrack::enter(GroupManager &gm, TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  gm.GroupAddTrack(group_number);
   gm.SetActiveGroup(group_number, tm);
 }
 
@@ -165,6 +168,7 @@ AddTrack& AddTrack::getInstance() {
  */
 // Last event received was a play event
 void RemoveTracks::enter(GroupManager &gm, TrackManager &tm, uint32_t group_number, uint32_t track_number) {
+  gm.GroupRemoveTrack(group_number);
   gm.SetActiveGroup(group_number, tm);
 }
 

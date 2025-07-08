@@ -29,6 +29,18 @@ void GroupManager::AddTrackToGroup(uint32_t track_number, uint8_t group_number) 
   }
 }
 
+void GroupManager::GroupAddTrack(uint8_t group_number) {
+  if (output_i2c != nullptr) {
+    output_i2c->SignalGroupAddTrack(group_number);
+  }
+}
+
+void GroupManager::GroupRemoveTrack(uint8_t group_number) {
+  if (output_i2c != nullptr) {
+    output_i2c->SignalGroupRemoveTrack(group_number);
+  }
+}
+
 void GroupManager::RemoveTrackFromGroup(uint32_t track_number, uint8_t group_number) {
   groups.at(group_number) &= ~(0x1 << track_number);
   if (output_i2c != nullptr) {
@@ -55,6 +67,12 @@ void GroupManager::SilenceAllTracks(TrackManager &tm) {
   tm.HandleMuteUnmuteTracks(0xFFFF);
 }
 
+void GroupManager::GroupInactive(uint8_t group_number) {
+  if (output_i2c != nullptr) {
+    output_i2c->SignalGroupInactive(group_number);
+  }
+}
+
 void GroupManager::UnmuteActiveGroupTracks(TrackManager &tm) {
 #ifdef DTEST_VERBOSE //_GM
   std::cout << "GM::UAGT" << std::endl;
@@ -70,7 +88,15 @@ void GroupManager::UnmuteActiveGroupTracks(TrackManager &tm) {
 		tm.GetTracksOff());
   }
 }
-
+void GroupManager::GroupActive(uint8_t new_group) {
+  if (output_i2c != nullptr) {
+    if (IsGroupEmpty(new_group)) {
+      output_i2c->SignalGroupActiveEmpty(new_group);
+    } else {
+      output_i2c->SignalGroupActiveWithTrack(new_group);
+    }
+  }
+}
 void GroupManager::SetActiveGroup(uint8_t new_group, TrackManager &tm) {
 #ifdef DTEST_VERBOSE //_GM
   std::cout << "GM::SAG from " << unsigned(active_group) << " to  " << unsigned(new_group) << std::endl;
@@ -163,5 +189,18 @@ bool GroupManager::IsStateRemoveTracks() {
 
 void GroupManager::SetOutputI2CPtr(OutputI2C* obj) {
   output_i2c = obj;
+}
+
+bool GroupManager::IsGroupEmpty(uint8_t group_number) {
+  if (group_number == MAX_GROUP_COUNT) { return false; }
+  return groups.at(group_number) == 0;
+}
+
+bool GroupManager::AreGroupTracksOff(uint8_t group_number, TrackManager &tm) {
+  if (group_number == MAX_GROUP_COUNT) { return false; }
+  uint16_t all_off_tracks = tm.GetTracksOff();
+  uint16_t tracks_in_group = groups.at(group_number);
+  tracks_in_group &= all_off_tracks;
+  return tracks_in_group == groups.at(group_number);
 }
 

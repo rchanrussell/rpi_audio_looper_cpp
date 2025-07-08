@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <chrono>
 #include <thread>
+#include "util.h"
 #include "input_gpio.h"
 #include "rpi_io_to_app_map.h"
 
@@ -230,8 +231,8 @@ void InputGpio::Reset() {
     e.wpi_pin = 0;
   }
   last_event = InputProcessedEvent::kNo;
-  last_group = -1;
-  last_track = -1;
+  last_group = MAX_GROUP_COUNT;
+  last_track = MAX_TRACK_COUNT;
   last_event_for_track = false;
 }
 
@@ -506,9 +507,9 @@ bool InputGpio::LastEventWasForTrack() {
 }
 
 int InputGpio::GetLastTrack() {
-  return last_track < 0 ? 0 : last_track;
+  return last_track;
 }
 
 int InputGpio::GetLastGroup() {
-  return last_group < 0 ? 0 : last_group;
+  return last_group;
 }

@@ -68,7 +68,12 @@ class GroupManager {
   uint8_t GetActiveGroup();
   void ResetActiveGroupToNone();
   void DisplayGroups();
+  bool AreGroupTracksOff(uint8_t group_number, TrackManager &tm);
+  bool IsGroupEmpty(uint8_t group_number);
   void SetOutputI2CPtr(OutputI2C* obj);
-
+  void GroupInactive(uint8_t group_number);
+  void GroupAddTrack(uint8_t group_number);
+  void GroupRemoveTrack(uint8_t group_number);
+  void GroupActive(uint8_t group_number);
 };
 #endif // GROUP_MANAGER_H
