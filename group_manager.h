@@ -75,5 +75,7 @@ class GroupManager {
   void GroupAddTrack(uint8_t group_number);
   void GroupRemoveTrack(uint8_t group_number);
   void GroupActive(uint8_t group_number);
+  uint16_t GetTracksInGroup(uint8_t group);
+  bool IsTrackMemberOfGroup(uint32_t track, uint8_t group);
 };
 #endif // GROUP_MANAGER_H

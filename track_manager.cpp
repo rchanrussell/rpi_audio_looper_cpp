@@ -7,6 +7,7 @@ static DataBlock empty_block;
 // Default Constructor - set all data to zero
 TrackManager::TrackManager() {
   current_state = &Off::getInstance();
+  active_group_tracks_ = 0xFFFF;
 }
 
 // Handle Index
@@ -641,11 +642,16 @@ void TrackManager::StateProcess(uint32_t track_number) {
 // largest end index
 void TrackManager::UpdateMasterEndIndex() {
   uint32_t new_max = 0;
+  uint16_t track = 0;
   for (auto &t : tracks) {
-    if (t.GetEndIndex() >= new_max) {
-      new_max = t.GetEndIndex();
+    if (active_group_tracks_ & (0x1 << track)) {
+      if (t.GetEndIndex() >= new_max) {
+        new_max = t.GetEndIndex();
+      }
     }
+    track++;
   }
+  std::cout << "TM:UMEI: MEI: " << master_end_index_ << ", NM: " << new_max << std::endl;
   master_end_index_ = new_max;
   if (master_current_index_ > master_end_index_) {
     master_current_index_ = master_end_index_;
@@ -698,3 +704,7 @@ uint16_t TrackManager::GetTracksOff() {
   return off;
 }
 
+// Group manaager will call upon group entering active state
+void TrackManager::SetActiveGroupTracks(uint16_t group_tracks) {
+  active_group_tracks_ = group_tracks;
+}

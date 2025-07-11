@@ -72,10 +72,14 @@ main (int argc, char *argv[])
 	gm.DisplayGroups();
       } else {
 
+      // Use IsTrackMemberOfGroup to prevent tracks from other groups interfering with
+      // active group
       if (gi.LastEventWasDown()) {
         if (gi.LastEventWasForTrack()) {
-          std::cout << "E:Down, T:" << gi.GetLastTrack() << std::endl;
-	  tm.HandleDownEvent(gi.GetLastTrack());
+	  if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+            std::cout << "E:Down, T:" << gi.GetLastTrack() << std::endl;
+	    tm.HandleDownEvent(gi.GetLastTrack());
+	  }
         } else {
           std::cout << "E:Down, G:" << gi.GetLastGroup() << std::endl;
 	  gm.HandleDownEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
@@ -83,8 +87,10 @@ main (int argc, char *argv[])
       }
       if (gi.LastEventWasDoubleDown()) {
         if (gi.LastEventWasForTrack()) {
-          std::cout << "E:DoubleDown, T:" << gi.GetLastTrack() << std::endl;
-	  tm.HandleDoubleDownEvent(gi.GetLastTrack());
+	  if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+            std::cout << "E:DoubleDown, T:" << gi.GetLastTrack() << std::endl;
+	    tm.HandleDoubleDownEvent(gi.GetLastTrack());
+	  }
         } else {
           std::cout << "E:DoubleDown, G:" << gi.GetLastGroup() << std::endl;
 	  gm.HandleDoubleDownEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
@@ -92,15 +98,14 @@ main (int argc, char *argv[])
       }
       if (gi.LastEventWasLongPulse()) {
         if (gi.LastEventWasForTrack()) {
-          std::cout << "E:LongPulse, T:" << gi.GetLastTrack() << std::endl;
-	  tm.HandleLongPulseEvent(gi.GetLastTrack());
+	  if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+            std::cout << "E:LongPulse, T:" << gi.GetLastTrack() << std::endl;
+	    tm.HandleLongPulseEvent(gi.GetLastTrack());
+	  }
         } else {
           std::cout << "E:LongPulse, G:" << gi.GetLastGroup() << std::endl;
 	  gm.HandleLongPulseEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
         }
-      }
-      if (!gm.IsGroupEmpty(gi.GetLastGroup()) && gm.AreGroupTracksOff(gi.GetLastGroup(), tm)) {
-        //tm.AreAllTracksOff(true); // force reset
       }
 
       }

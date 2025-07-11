@@ -27,6 +27,7 @@ class TrackManager {
   // one track must start at zero (if no audio desired, don't play, record silence)
   uint32_t master_end_index_;
   uint32_t master_current_index_;
+  uint16_t active_group_tracks_;
   bool master_current_index_updated_;
 
   // DataBuffers
@@ -158,5 +159,6 @@ class TrackManager {
   uint16_t GetTracksInMute();
   uint16_t GetTracksInPlayback();
   uint16_t GetTracksOff();
+  void SetActiveGroupTracks(uint16_t group_tracks);
 };
 #endif // TRACK_MANAGER_H

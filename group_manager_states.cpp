@@ -64,6 +64,9 @@ void Active::enter(GroupManager &gm, TrackManager &tm, uint32_t group_number, ui
   } else {
     gm.SetActiveGroup(group_number, tm);
   }
+  // Should a track be turned off, we want to ensure the end indices are only within the
+  // active group
+  tm.SetActiveGroupTracks(gm.GetTracksInGroup(group_number));
 }
 
 void Active::exit(GroupManager &gm, TrackManager &tm, uint32_t group_number, uint32_t track_number) {

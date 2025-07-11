@@ -204,3 +204,14 @@ bool GroupManager::AreGroupTracksOff(uint8_t group_number, TrackManager &tm) {
   return tracks_in_group == groups.at(group_number);
 }
 
+uint16_t GroupManager::GetTracksInGroup(uint8_t group_number) {
+  return groups.at(group_number);
+}
+
+bool GroupManager::IsTrackMemberOfGroup(uint32_t track, uint8_t group) {
+  if (group > MAX_GROUP_COUNT) { return false; }
+  // If no groups, active group will be MAX_GROUP_COUNT
+  // We want it to work so always return true - so there's no blocking
+  if (group == MAX_GROUP_COUNT) { return true; }
+  return groups.at(group) & (0x1 << track);
+}
