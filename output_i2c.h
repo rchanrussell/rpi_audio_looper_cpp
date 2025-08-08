@@ -6,7 +6,7 @@
 #define EXP0_ADDR 0x3E
 #define EXP1_ADDR 0x3F
 #define EXP2_ADDR 0x70
-#define EXP3_ADDR 0x71
+#define DISP0_ADDR 0x72
 #define LEDS_PER_TRACK 3
 
 class OutputI2C {
@@ -14,7 +14,8 @@ class OutputI2C {
   int i2c_red_fd;
   int i2c_green_fd;
   int i2c_yellow_fd;
-  int i2c_dev3_fd;
+  int i2c_disp0_fd;
+  int i2c_disp1_fd;
 
   // Methods
   bool InitializeExpander(int fd);

@@ -50,7 +50,6 @@ main (int argc, char *argv[])
 
   std::cout << "Enable Jack Audio Processing" << std::endl;
   jack.EnableJackAudioProcessing();
-
   std::cout << "Entering while1" << std::endl;
 
   // Hammer on this but need to handle multiple events case!
