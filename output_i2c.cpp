@@ -401,7 +401,7 @@ bool OutputI2C::SetLEDOn(int fd, uint16_t led) {
 bool OutputI2C::SetLEDIntensity(int fd, uint16_t led, bool set_max) {
   if (fd < 0) { return false; }
   if (led > 15) { return false; }
-  uint8_t intensity = set_max ? 0xFF : 0x00;
+  uint8_t intensity = set_max ? 0x0C : 0x00;
   uint8_t addr = i2c_sx1509_led_intensity.at(led); 
   if (wiringPiI2CWriteReg8(fd, addr, intensity) < 0) {
     std::cout << "Error I2C set LED intensity to " << intensity << std::endl;
