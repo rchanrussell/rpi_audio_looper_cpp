@@ -31,8 +31,10 @@ class OutputI2C {
   void SignalPlayback(uint32_t track);
   void SignalMuted(uint32_t track);
   void SignalOff(uint32_t track);
+#ifndef DTEST_I2C
   void SignalInGroup(uint32_t track);
   void SignalNotInGroup(uint32_t track);
+#endif
   void SignalTracksInGroupThread(
        uint16_t tracks_in_group,
        uint16_t tracks_in_playback,
@@ -67,6 +69,10 @@ class OutputI2C {
   void SignalGroupActiveEmpty(uint8_t group_number);
   void SignalGroupRemoveTrack(uint8_t group_number);
   void SignalGroupInactive(uint8_t group_number);
+#ifdef DTEST_I2C
+  void SignalInGroup(uint32_t track);
+  void SignalNotInGroup(uint32_t track);
+#endif
 
 };
 

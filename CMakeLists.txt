@@ -17,10 +17,12 @@ set(TEST_SOURCES_GROUP_MANAGER test_group_manager.cpp)
 set(TEST_SOURCES_STATE_MACHINE test_state_machine.cpp)
 set(TEST_GMTT test_group_manager_state_machine.cpp)
 set(TEST_GPIO gpio_main.cpp)
+set(TEST_LED_SW test_i2c.cpp)
 
 ## add_executable(application ${COMMON_SOURCES} ${TARGET_SOURCES})
 
 ## TEST COMPILATIONS - add the extra defines for debug output
+add_compile_definitions(DTEST_I2C)
 add_compile_definitions(DTEST_TM)
 add_compile_definitions(DTEST_GM)
 add_compile_definitions(DTEST_VERBOSE)
@@ -38,9 +40,11 @@ add_executable(test_group_manager ${COMMON_SOURCES} ${TEST_SOURCES_GROUP_MANAGER
 add_executable(ttt ${COMMON_SOURCES} ${TEST_TT})
 add_executable(gtt ${COMMON_SOURCES} ${TEST_GMTT})
 add_executable(gpio ${COMMON_SOURCES} ${TEST_GPIO})
+add_executable(ti2c ${COMMON_SOURCES} ${TEST_LED_SW})
 
 find_library(wiringPi_LIB wiringPi)
 find_library(jackaudio_LIB jack)
+target_link_libraries(ti2c ${wiringPi_LIB} ${jackaudio_LIB})
 target_link_libraries(gpio ${wiringPi_LIB} ${jackaudio_LIB})
 target_link_libraries(test_state_machine ${wiringPi_LIB} ${jackaudio_LIB})
 target_link_libraries(test_mixer ${wiringPi_LIB} ${jackaudio_LIB})
@@ -55,5 +59,6 @@ target_compile_definitions(test_track PUBLIC DTEST_TM_AIS)
 target_compile_definitions(test_track_manager PUBLIC DTEST_TM_AIS)
 target_compile_definitions(test_group_manager PUBLIC DTEST_TM_AIS)
 target_compile_definitions(gpio PUBLIC DTEST_GPIO)
+target_compile_definitions(ti2c PUBLIC DTEST_I2C)
 
 ## target_link_libraries(test PRIVATE wiringPi etc.. normal g++ -l items)

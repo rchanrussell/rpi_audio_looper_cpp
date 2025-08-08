@@ -366,9 +366,9 @@ bool OutputI2C::SetLEDOff(int fd, uint16_t led) {
   // for LED 7:0 use addr 0x11
   // Then reduce LED to 7:0 value as it's by bit in an 8bit register
   addr = (led > 7) ? 0x10 : 0x11;
-  if (led > 7) { led -= 8; }
+  uint16_t led_temp = (led > 7) ? led - 8 : led;
   uint8_t reg = wiringPiI2CReadReg8(fd, addr);
-  reg |= (0x1 << led); // set to turn LED off
+  reg |= (0x1 << led_temp); // set to turn LED off
   wiringPiI2CWriteReg8(fd, addr, reg);
   return SetLEDIntensity(fd, led, false);
 }
@@ -390,9 +390,9 @@ bool OutputI2C::SetLEDOn(int fd, uint16_t led) {
   // for LED 7:0 use addr 0x11
   // Then reduce LED to 7:0 value as it's by bit in an 8bit register
   addr = (led > 7) ? 0x10 : 0x11;
-  if (led > 7) { led -= 8; }
+  uint16_t led_temp = (led > 7) ? led - 8 : led;
   uint8_t reg = wiringPiI2CReadReg8(fd, addr);
-  reg &= ~(0x1 << led); // clear to turn LED on
+  reg &= ~(0x1 << led_temp); // clear to turn LED on
   wiringPiI2CWriteReg8(fd, addr, reg);
 
   return SetLEDIntensity(fd, led, true);
