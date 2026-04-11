@@ -259,6 +259,11 @@ bool OutputI2C::InitializeWiringPiI2C() {
     std::cout << "Error, device does not exist" << std::endl;
   }
 
+  i2c_disp1_fd = wiringPiI2CSetup(DISP1_ADDR);
+  if (i2c_disp1_fd < 0){
+    std::cout << "Error, device does not exist" << std::endl;
+  }
+
   bool at_least_one_dev = false;
   std::cout << "Initializing expander at " << std::hex << EXP0_ADDR << std::endl;
   if (i2c_red_fd >= 0) {
@@ -293,6 +298,14 @@ bool OutputI2C::InitializeWiringPiI2C() {
     displayClear(i2c_disp0_fd);
     uint16_t group_display [] = {'G', '-', '-', '-'};
     display16(i2c_disp0_fd, group_display);
+  }
+
+  std::cout << "Initializing display at " << std::hex << DISP1_ADDR << std::endl;
+  if (i2c_disp1_fd >= 0) {
+    displayOn(i2c_disp1_fd);
+    displayClear(i2c_disp1_fd);
+    uint16_t group_display [] = {'-', '-', '-', '-'};
+    display16(i2c_disp1_fd, group_display);
   }
 
   return at_least_one_dev;

@@ -57,56 +57,69 @@ main (int argc, char *argv[])
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
     if (gi.ProcessAndHandleInputEvents()) {
       gettimeofday(&tstart, NULL);
+      std::cout << "EVT DN?:" << gi.LastEventWasDown() << ", for T?:" << gi.LastEventWasForTrack() << ", LstTrk:" << gi.GetLastTrack() << ", LstGrp:" << gi.GetLastGroup() << std::endl;
       if (gm.IsStateAddTrack() && gi.LastEventWasDown() && gi.LastEventWasForTrack()) {
         //gm.AddTrackToGroup(gi.GetLastTrack(), gi.GetLastGroup());
 	// This adds tracks to group - redundant but in gpio should only send the events
 	// it doesn't have to know about the innerworkings of events
+        std::cout << "AddTrack - E:Down, T:" << gi.GetLastTrack() << std::endl;
         gm.StateProcess(tm, gi.GetLastGroup(), gi.GetLastTrack());
 	gm.DisplayGroups();
       } else if (gm.IsStateRemoveTracks() && gi.LastEventWasDown() && gi.LastEventWasForTrack()) {
         //gm.AddTrackToGroup(gi.GetLastTrack(), gi.GetLastGroup());
 	// This adds tracks to group - redundant but in gpio should only send the events
 	// it doesn't have to know about the innerworkings of events
+        std::cout << "RmvTrack - E:Down, T:" << gi.GetLastTrack() << std::endl;
         gm.StateProcess(tm, gi.GetLastGroup(), gi.GetLastTrack());
 	gm.DisplayGroups();
       } else {
 
-      // Use IsTrackMemberOfGroup to prevent tracks from other groups interfering with
-      // active group
-      if (gi.LastEventWasDown()) {
-        if (gi.LastEventWasForTrack()) {
-	  if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+        // Use IsTrackMemberOfGroup to prevent tracks from other groups interfering with
+        // active group
+        if (gi.LastEventWasDown()) {
+          if (gi.LastEventWasForTrack()) {
             std::cout << "E:Down, T:" << gi.GetLastTrack() << std::endl;
-	    tm.HandleDownEvent(gi.GetLastTrack());
-	  }
-        } else {
-          std::cout << "E:Down, G:" << gi.GetLastGroup() << std::endl;
-	  gm.HandleDownEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
+            if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+               tm.HandleDownEvent(gi.GetLastTrack());
+    	    } else {
+              std::cout << "NtMbrGrp T:" << gi.GetLastTrack() << ", G:" << gi.GetLastGroup() << std::endl;
+	    }
+          } else {
+            std::cout << "E:Down, G:" << gi.GetLastGroup() << std::endl;
+  	    gm.HandleDownEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
+          }
         }
-      }
-      if (gi.LastEventWasDoubleDown()) {
-        if (gi.LastEventWasForTrack()) {
-	  if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+	else if (gi.LastEventWasDoubleDown()) {
+          if (gi.LastEventWasForTrack()) {
             std::cout << "E:DoubleDown, T:" << gi.GetLastTrack() << std::endl;
-	    tm.HandleDoubleDownEvent(gi.GetLastTrack());
-	  }
-        } else {
-          std::cout << "E:DoubleDown, G:" << gi.GetLastGroup() << std::endl;
-	  gm.HandleDoubleDownEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
+  	    if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+  	      tm.HandleDoubleDownEvent(gi.GetLastTrack());
+  	    } else {
+              std::cout << "NtMbrGrp T:" << gi.GetLastTrack() << ", G:" << gi.GetLastGroup() << std::endl;
+            }
+          } else {
+            std::cout << "E:DoubleDown, G:" << gi.GetLastGroup() << std::endl;
+  	    gm.HandleDoubleDownEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
+          }
         }
-      }
-      if (gi.LastEventWasLongPulse()) {
-        if (gi.LastEventWasForTrack()) {
-	  if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+	else if (gi.LastEventWasLongPulse()) {
+          if (gi.LastEventWasForTrack()) {
             std::cout << "E:LongPulse, T:" << gi.GetLastTrack() << std::endl;
-	    tm.HandleLongPulseEvent(gi.GetLastTrack());
-	  }
-        } else {
-          std::cout << "E:LongPulse, G:" << gi.GetLastGroup() << std::endl;
-	  gm.HandleLongPulseEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
+  	    if (gm.IsTrackMemberOfGroup(gi.GetLastTrack(), gi.GetLastGroup())) {
+  	      tm.HandleLongPulseEvent(gi.GetLastTrack());
+  	    } else {
+              std::cout << "T:" << gi.GetLastTrack() << ", G:" << gi.GetLastGroup() << std::endl;
+            }
+          } else {
+            std::cout << "E:LongPulse, G:" << gi.GetLastGroup() << std::endl;
+  	    gm.HandleLongPulseEvent(tm, gi.GetLastGroup(), gi.GetLastTrack());
+          }
         }
-      }
-
+	else if (gi.LastEventWasUp()) {
+	  std::cout << "E: Up Event not handled" << std::endl;
+	} else {
+	  std::cout << "E: other, not handled" << std::endl;
+	}
       }
       gettimeofday(&tend, NULL);
       timersub(&tend, &tstart, &tdiff);

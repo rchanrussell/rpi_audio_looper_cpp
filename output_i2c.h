@@ -7,6 +7,7 @@
 #define EXP1_ADDR 0x3F
 #define EXP2_ADDR 0x70
 #define DISP0_ADDR 0x72
+#define DISP1_ADDR 0x71
 #define LEDS_PER_TRACK 3
 
 class OutputI2C {

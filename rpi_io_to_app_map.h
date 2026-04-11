@@ -6,6 +6,8 @@
 struct WiringPiToGpioHeaderPin {
   int wiring_pi;
   int header_pin;
+  unsigned int bcm_pin;
+  unsigned int input_number;
 };
 
 // Set this in order - first entry is track 0
@@ -15,46 +17,17 @@ struct WiringPiToGpioHeaderPin {
 // how wiringPi works and you'll encounter horrible bugs!
 // Keep this only for track inputs!
 std::vector<struct WiringPiToGpioHeaderPin> track_to_pin = {
-  /* Odd Header Pins */
-  {13, 21}, {14, 23}, {30, 27}, {21, 29},
-  {25, 37}, {24, 35}, {23, 33}, {22, 31},
-  {0, 11},  {2, 13},  {3, 15},  {12, 19},
-  {16, 10}, {1, 12},  {4, 16},  {5, 18}
-#if 0
-  {0, 11},  {2, 13},  {3, 15},  {12, 19},
-  {13, 21}, {14, 23}, {30, 27}, {21, 29},
-  {22, 31}, {23, 33}, {24, 35}, {25, 37},
-  /* Even Header Pins */
-  {15, 8},  {16, 10}, {1, 12},  {4, 16}
-#endif
+  {13, 21, 9, 0},  {14, 23, 11, 1}, {30, 27, 0, 2},  {21, 29, 5, 3},
+  {25, 37, 26, 4}, {24, 35, 19, 5}, {23, 33, 13, 6}, {22, 31, 6, 7},
+  {0, 11, 17, 8},  {2, 13, 27, 9},  {3, 15, 22, 10}, {12, 19, 10, 11},
+  {16, 10, 15, 12},{1, 12, 18, 13},  {4, 16, 23, 14},{5, 18, 24, 15}
 };
 
 // Set this in order - first entry is group 0
 // second entry is group 1 etc..
 std::vector<struct WiringPiToGpioHeaderPin> group_to_pin = {
-  {29, 40}, {28, 38}, {27, 36}, {26, 32},
-  {6, 22},  {10, 24}, {11, 26}, {31, 28}
-#if 0
-      	{5, 18},  {6, 22},  {10, 24}, {11, 26},
-  {31, 28}, {26, 32}, {27, 36}, {28, 38}
-#endif
-};
-
-// Simple map for LED access using SDA/SCL
-// WiringPi uses I2C1, header pins 3 and 5
-// No need for defines, but do not connect with them if
-// using I2C and wiringPi as this app does, for LED output
-
-std::vector<struct WiringPiToGpioHeaderPin> wiringpi_all_gpio_to_pin = {
-  /* Odd Header Pins */
-  {8, 3},   {9, 5},   {7, 7},   {0, 11},
-  {2, 13},  {3, 15},  {12, 19}, {13, 21},
-  {14, 23}, {30, 27}, {21, 29}, {22, 31},
-  {23, 33}, {24, 35}, {25, 37},
-  /* Even Header Pins */
-  {15, 8},  {16, 10}, {1, 12},  {4, 16},  {5, 18},  {6, 22},
-  {10, 24}, {11, 26}, {31, 28}, {26, 32}, {27, 36}, {28, 38},
-  {29, 40}
+  {29, 40, 21, 0}, {28, 38, 20, 1}, {27, 36, 16, 2}, {26, 32, 12, 3},
+  {6, 22, 25, 4},  {10, 24, 8, 5},  {11, 26, 7, 6},  {31, 28, 1, 7}
 };
 
 #endif //RPI_IO_TO_APP_MAP_H

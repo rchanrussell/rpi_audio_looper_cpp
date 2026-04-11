@@ -22,7 +22,8 @@ enum class InputProcessedEvent {
 
 struct ProcessedEvent {
   InputProcessedEvent event;
-  int wpi_pin;
+  int input_number;
+  bool is_track;
 };
 
 class InputGpio {
@@ -36,41 +37,16 @@ class InputGpio {
 
   // Methods
   bool ConfigureWiringPiPins();
-  bool AssignWiringPiISRs();
 
   void ProcessedEventQueueUpdate();
 
-  void EnqueueInputDownEvent(uint32_t input_number);
-  void EnqueueInputUpEvent(uint32_t input_number);
-  void GpioIsrProcessor(uint32_t input_number);
+  void EnqueueInputDownEvent(uint32_t input_number, bool is_track);
+  void EnqueueInputUpEvent(uint32_t input_number, bool is_track);
+  void GpioIsrProcessor(uint32_t wpi_pin, uint32_t input_number, bool is_track);
 
   // ISRs
-  // Tracks
-  static void Gpio_0_IsrHandler();
-  static void Gpio_1_IsrHandler();
-  static void Gpio_2_IsrHandler();
-  static void Gpio_3_IsrHandler();
-  static void Gpio_4_IsrHandler();
-  static void Gpio_5_IsrHandler();
-  static void Gpio_6_IsrHandler();
-  static void Gpio_7_IsrHandler();
-  static void Gpio_8_IsrHandler();
-  static void Gpio_9_IsrHandler();
-  static void Gpio_10_IsrHandler();
-  static void Gpio_11_IsrHandler();
-  static void Gpio_12_IsrHandler();
-  static void Gpio_13_IsrHandler();
-  static void Gpio_14_IsrHandler();
-  static void Gpio_15_IsrHandler();
-  // Groups
-  static void Gpio_16_IsrHandler();
-  static void Gpio_17_IsrHandler();
-  static void Gpio_18_IsrHandler();
-  static void Gpio_19_IsrHandler();
-  static void Gpio_20_IsrHandler();
-  static void Gpio_21_IsrHandler();
-  static void Gpio_22_IsrHandler();
-  static void Gpio_23_IsrHandler();
+  static void Gpio_Track_IsrHandler(struct WPIWfiStatus wfiStatus, void* userdata);
+  static void Gpio_Group_IsrHandler(struct WPIWfiStatus wfiStatus, void* userdata);
 
   public:
   InputGpio();
