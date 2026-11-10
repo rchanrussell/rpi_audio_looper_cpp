@@ -11,7 +11,6 @@
 // All tracks are off - system is in idle
 // State Specific Methods
 void Off::Enter(TrackManager &tm, uint32_t track_number) {
-std::cout << "Off:Enter t:" << track_number << std::endl;
   tm.SetTrackStateOff(track_number);
   tm.UpdateMasterEndIndex();
   tm.AreAllTracksOff(); // if true, it will automatically reset master indexes
@@ -21,12 +20,8 @@ void Off::Exit(TrackManager &tm, uint32_t track_number) {
 }
 
 void Off::Active(TrackManager &tm, uint32_t track_number) {
-// last state entered was off, if user wants to off -> rec on same we need to remain off
-// HOWEVER if there's at least one track in playback or repeat, we should continue mixdown
-  if (tm.GetTracksInMute() > 0 || tm.GetTracksInPlayback() > 0) {
-    tm.PerformMixdown();
-    tm.IndexUpdateAllStatesNoChange();
-  }
+  tm.PerformMixdown();
+  tm.IndexUpdateAllStatesNoChange();
 }
 
   // Event State Transitions
@@ -171,6 +166,7 @@ void Play::Enter(TrackManager &tm, uint32_t track_number) {
 }
 
 void Play::Exit(TrackManager &tm, uint32_t track_number) {
+  std::cout << "T:" << track_number << "PLAY::EXIT" << std::endl;
   tm.IndexUpdatePlaybackExit(track_number);
 }
 

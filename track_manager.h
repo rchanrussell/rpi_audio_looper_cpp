@@ -158,6 +158,7 @@ class TrackManager {
   void SetOutputI2CPtr(OutputI2C* obj);
   uint16_t GetTracksInMute();
   uint16_t GetTracksInPlayback();
+  uint16_t GetTracksInRecord();
   uint16_t GetTracksOff();
   void SetActiveGroupTracks(uint16_t group_tracks);
 };

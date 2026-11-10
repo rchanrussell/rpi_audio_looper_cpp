@@ -567,7 +567,7 @@ void TrackManager::CopyBufferToTrack(uint32_t track_number) {
               input_buffer_,
 	      overdub);
     tracks.at(track_number).SetBlockData(tracks.at(track_number).GetCurrentIndex(), overdub);
-  }    
+  }
 }
 
 void TrackManager::CopyToInputBuffer(void *d, uint32_t nsamples) {
@@ -582,9 +582,23 @@ void TrackManager::CopyToInputBuffer(void *d, uint32_t nsamples) {
 void TrackManager::CopyMixdownToBuffer(void *d, uint32_t nsamples) {
   float *data = (float *)d;
   if (nsamples > SAMPLES_PER_BLOCK) {
-    std::copy(begin(mixdown.samples_), end(mixdown.samples_), data);
+    // if not recording, copy do extra mixdown of mixdown samples with input buffer
+    // this will give monitoring effect while playing back loops
+    if (GetTracksInRecord() == 0) {
+      DataBlock final_mix(0);
+      MixBlocks(mixdown, input_buffer_, final_mix);
+      std::copy(begin(final_mix.samples_), end(final_mix.samples_), data);
+    } else {
+      std::copy(begin(mixdown.samples_), end(mixdown.samples_), data);
+    }
   } else {
-    std::copy(begin(mixdown.samples_), begin(mixdown.samples_) + nsamples, data);
+    if (GetTracksInRecord() == 0) {
+      DataBlock final_mix(0);
+      MixBlocks(mixdown, input_buffer_, final_mix);
+      std::copy(begin(final_mix.samples_), end(final_mix.samples_) + nsamples, data);
+    } else {
+      std::copy(begin(mixdown.samples_), begin(mixdown.samples_) + nsamples, data);
+    }
   }
 }
 
@@ -692,6 +706,16 @@ uint16_t TrackManager::GetTracksInPlayback() {
     }
   }
   return play;
+}
+
+uint16_t TrackManager::GetTracksInRecord() {
+  uint16_t record = 0;
+  for (uint8_t t = 0; t < MAX_TRACK_COUNT; t++) {
+    if (tracks.at(t).IsTrackInRecord() || tracks.at(t).IsTrackOverdubbing()) {
+      record |= 0x1 << t;
+    }
+  }
+  return record;
 }
 
 uint16_t TrackManager::GetTracksOff() {

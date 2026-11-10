@@ -62,7 +62,14 @@ int AudioJack::Process(jack_nframes_t nframes, void *arg) {
 #endif
     return 0;
   }
-  if (pv->gpio_->GetLastTrack() >= MAX_TRACK_COUNT) { return 0; }
+  // This will prevent monitoring at startup!
+  // If all tracks are off, then zeros in mixdown
+  // Only when recording should input buffer not be added to mixdown
+  if (pv->gpio_->GetLastTrack() >= MAX_TRACK_COUNT) {
+    memcpy (out1, in1, sizeof (jack_default_audio_sample_t) * nframes);
+    memcpy (out2, in2, sizeof (jack_default_audio_sample_t) * nframes);
+    return 0;
+  }
 
   if (pv->track_manager_left_ == nullptr) {
 #ifdef JACK_VERBOSE
